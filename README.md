@@ -1,20 +1,15 @@
-# Get Strong As Fudge PWA v3
+# Get Strong As Fudge PWA v4
 
-Technique system:
-- Programmed default variation by block
-- Swap any technique lift
-- Every option shows the weak point it targets
-- Every variation carries its own set/rep/percentage/RPE prescription
-- Intensity is recalculated from the current training max
-- Technique choices are stored per week
-- Training maxes remain editable
+New:
+- Prescribed values are prefilled, but actual weight/sets/reps/RPE are editable and permanently logged.
+- Primary progression adapts to prior-week performance:
+  - missed prescribed reps -> hold the same top-set load next week
+  - target achieved at RPE 9.5+ -> hold
+  - target achieved below that -> continue programmed progression
+- Technique swaps immediately repopulate the variation-specific weight, sets, reps, and RPE.
+- Random primary-lift celebrations: SLAY, BEAST, DAWG, ANIMAL, QUEEN, BEAUT.
+- Cardio/recovery reminder at the end of each workout.
+- Excel export with Summary, Main Lifts, Technique Work, Accessories, Training Maxes, and Progression sheets.
+- On supported iPhones, Excel opens the native Share Sheet for Mail, Files, AirDrop, Messages, etc.
 
-Programming:
-- Day 1 Heavy Squat + Bench
-- Day 2 Heavy Deadlift + OHP
-- Day 3 Bench + Squat technique work
-- Day 4 OHP + Deadlift technique/secondary work
-- Deloads Weeks 4, 8, 12
-- Week 16 test week
-
-Deploy by replacing the root files in your GitHub Pages repository.
+Deploy the contents of this folder to the root of the GitHub Pages repo.

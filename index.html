@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Strong As Fudge">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <title>Get Strong As Fudge</title>
 <style>
 :root{--bg:#0B1020;--panel:#151C30;--panel2:#1D2740;--text:#F7F8FB;--muted:#AEB8CC;--accent:#F2B84B;--green:#65D6A6;--line:#2C3857;--red:#FF7B7B}
@@ -37,6 +38,17 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 .log{display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:8px;padding:11px 0;border-bottom:1px solid var(--line)}.e1rm{color:var(--green);font-weight:800;text-align:right}
 .footer{text-align:center;color:var(--muted);font-size:12px;margin-top:18px}
 @media(max-width:560px){.techMeta{grid-template-columns:1fr 1fr}.fields{grid-template-columns:1fr 1fr 1fr}}
+
+.celebrate{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(11,16,32,.78);z-index:100;pointer-events:none}
+.celebrate.show{display:flex;animation:fadeCelebration .85s ease both}
+.celebrateWord{font-size:min(22vw,120px);font-weight:1000;color:var(--accent);text-shadow:0 8px 35px rgba(0,0,0,.6);transform:rotate(-7deg)}
+@keyframes fadeCelebration{0%{opacity:0;transform:scale(.65)}25%{opacity:1;transform:scale(1.06)}70%{opacity:1}100%{opacity:0;transform:scale(1.2)}}
+.recovery{background:linear-gradient(135deg,#10263A,#152135);border:1px solid #31516A;border-radius:14px;padding:14px;margin-top:16px}
+.recoveryTitle{font-weight:900;color:var(--green);margin-bottom:5px}
+.exportNote{font-size:12px;color:var(--muted);margin-top:8px}
+.adapt{color:var(--green);font-size:12px;font-weight:800;margin-top:5px}
+.actualBox{background:#11192B;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+
 </style>
 </head>
 <body>
@@ -46,9 +58,16 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 <section class="panel"><div class="row"><div><h2 id="weekTitle"></h2><div class="small" id="phaseDesc"></div></div><button class="btn secondary" onclick="openMaxes()">Update Maxes</button></div><div class="weeks" id="weeks"></div></section>
 <div id="workouts"></div>
 <section class="panel"><h2>Recent Main-Lift Entries</h2><div id="recent"></div></section>
+<section class="panel">
+  <h2>Export Training Data</h2>
+  <div class="small">Creates a multi-sheet Excel workbook with main lifts, technique work, accessories, training maxes, and progression notes.</div>
+  <button class="btn" style="width:100%;margin-top:12px" onclick="exportExcel()">Export / Share Excel</button>
+  <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
+</section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
 <div class="footer">All training data is stored locally on this device.</div>
 </main>
+<div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div>
 
 <div id="maxModal" class="modal"><div class="sheet"><h2>Update Training Maxes</h2><div id="maxFields"></div><div style="height:10px"></div><button class="btn" style="width:100%" onclick="saveMaxes()">Save Maxes</button><button class="btn secondary" style="width:100%;margin-top:8px" onclick="closeModal('maxModal')">Cancel</button></div></div>
 
@@ -155,15 +174,49 @@ const DEFAULT_ACC={
  3:['Romanian Deadlift','Weighted Dip','Plank']
 };
 
-const KEY='GSAF_PWA_V3';
-let state=JSON.parse(localStorage.getItem(KEY)||'null')||{maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{}};
+const KEY='GSAF_PWA_V4', LEGACY_KEY='GSAF_PWA_V3';
+let state=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem(LEGACY_KEY)||'null')||{maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{},progression:[]};
+state.progression=state.progression||[];
+state.entries=state.entries||{};
+state.techChoices=state.techChoices||{};
+state.accessories=state.accessories||{};
 let week=1, techPicker=null, accessoryPicker=null;
 
 const round5=x=>Math.round(x/5)*5;
 const phaseFor=w=>PHASES.find(p=>p.weeks.includes(w));
 const phaseKey=w=>[4,8,12].includes(w)?'deload':w<=3?'base':w<=7?'strength':w<=11?'max':w<=14?'peak':w===15?'taper':'peak';
 const mainId=(w,d,l)=>`${w}-${d}-${KEYS[l]}`;
-function suggested(l,w){const m=state.maxes[KEYS[l]];if(w<=3)return round5(m*[.80,.82,.84][w-1]);if(w===4)return round5(m*.68);if(w<=7)return round5(m*[.84,.86,.88][w-5]);if(w===8)return round5(m*.72);if(w<=11)return round5(m*[.88,.90,.92][w-9]);if(w===12)return round5(m*.75);if(w===13)return round5(m*.93);if(w===14)return round5(m*.96);if(w===15)return round5(m*.90);return round5(m*1.01)}
+function baseSuggested(l,w){
+ const m=state.maxes[KEYS[l]];
+ if(w<=3)return round5(m*[.80,.82,.84][w-1]);
+ if(w===4)return round5(m*.68);
+ if(w<=7)return round5(m*[.84,.86,.88][w-5]);
+ if(w===8)return round5(m*.72);
+ if(w<=11)return round5(m*[.88,.90,.92][w-9]);
+ if(w===12)return round5(m*.75);
+ if(w===13)return round5(m*.93);
+ if(w===14)return round5(m*.96);
+ if(w===15)return round5(m*.90);
+ return round5(m*1.01);
+}
+function priorPrimary(l,w){
+ if(w<=1)return null;
+ const candidates=Object.values(state.entries).filter(e=>e.kind==='Primary'&&e.lift===l&&e.week===w-1);
+ return candidates.sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
+}
+function suggestedInfo(l,w){
+ const scheduled=baseSuggested(l,w), prev=priorPrimary(l,w);
+ if(!prev)return {weight:scheduled,note:'Programmed progression'};
+ const target=Number(prev.prescribedReps||prev.reps||1), actual=Number(prev.reps||0), rpe=Number(prev.rpe||0);
+ if(actual<target){
+   return {weight:Number(prev.weight),note:`Held at ${prev.weight} lb: last week was ${actual}/${target} reps`};
+ }
+ if(rpe>=9.5){
+   return {weight:Number(prev.weight),note:`Held at ${prev.weight} lb: last week reached RPE ${rpe}`};
+ }
+ return {weight:scheduled,note:'Target achieved last week — programmed progression continues'};
+}
+function suggested(l,w){return suggestedInfo(l,w).weight}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
 function getTechChoice(lift){
  const k=`${week}-${lift}`, pk=phaseKey(week), id=state.techChoices[k]||DEFAULT_TECH[pk][lift];
@@ -211,21 +264,58 @@ function render(){
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
  document.getElementById('recent').innerHTML=recent.length?recent.map(e=>`<div class="log"><strong>W${e.week} ${e.lift}</strong><span class="small">${e.weight} × ${e.reps}${e.sets?` × ${e.sets}`:''} @ ${e.rpe}</span><span class="e1rm">${e.e1rm?`${Math.round(e.e1rm)} e1RM`:(e.kind||'Logged')}</span></div>`).join(''):'<div class="small">No sets logged yet.</div>';
 }
+function recoveryHtml(di){
+ const pk=phaseKey(week);
+ const recs=[
+  {cardio:'15–25 min easy walk or Zone 2 bike',recovery:'5–10 min hips/adductors + eat, hydrate, and get sleep.'},
+  {cardio:'15–25 min easy Zone 2 or incline walk',recovery:'Light hamstring/lat mobility. Avoid hard intervals after heavy pulls.'},
+  {cardio:'20–30 min Zone 2 if you feel good',recovery:'Technique day: good place for easy conditioning. Keep it conversational.'},
+  {cardio:'20–30 min easy walk, bike, or incline treadmill',recovery:'If fatigue is high, skip cardio and prioritize food, hydration, and sleep.'}
+ ][di];
+ if(['peak','taper'].includes(pk)){rec.cardio='10–20 min very easy walking only';rec.recovery='Peaking: recovery wins. Keep fatigue low and prioritize sleep/nutrition.'}
+ return `<div class="recovery"><div class="recoveryTitle">Finish the day</div><div><strong>Cardio:</strong> ${rec.cardio}</div><div style="margin-top:5px"><strong>Recovery:</strong> ${rec.recovery}</div></div>`;
+}
 function workoutHtml(day,di,p){
- if(day.type==='primary') return `<section class="panel"><h2>${day.name}</h2>${day.lifts.map(l=>primaryHtml(l,di,p)).join('')}${accessoriesSection(di)}</section>`;
- if(day.type==='technique') return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No technique work during test week.</div>':techniqueHtml('Bench',di)+techniqueHtml('Squat',di)}${accessoriesSection(di)}</section>`;
- return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No secondary work during test week.</div>':techniqueHtml('OHP',di)+techniqueHtml('Deadlift',di)}${accessoriesSection(di)}</section>`;
+ if(day.type==='primary') return `<section class="panel"><h2>${day.name}</h2>${day.lifts.map(l=>primaryHtml(l,di,p)).join('')}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
+ if(day.type==='technique') return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No technique work during test week.</div>':techniqueHtml('Bench',di)+techniqueHtml('Squat',di)}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
+ return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No secondary work during test week.</div>':techniqueHtml('OHP',di)+techniqueHtml('Deadlift',di)}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
 }
 function primaryHtml(l,di,p){
- const id=mainId(week,di,l),e=state.entries[id]||{},top=suggested(l,week);
- if(p.primary.test)return `<div class="lift"><div class="liftname">${l}</div><div class="small">Test day — log best attempt</div><div class="fields"><input id="${id}-w" type="number" placeholder="${top}"><input id="${id}-r" type="number" value="1"><input id="${id}-p" type="number" step=".5" placeholder="10"></div><button class="btn" style="width:100%" onclick="logPrimary('${id}','${l}',${di},1)">Log Best Attempt</button></div>`;
- if(p.primary.deload){const work=round5(state.maxes[KEYS[l]]*.60);return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Deload — no top set</div></div><div class="backoff">${work} × ${p.primary.backReps} × ${p.primary.sets}</div></div><button class="btn secondary" style="width:100%;margin-top:12px" onclick="logTechniqueDirect('${l}',${di},${work},${p.primary.backReps},${p.primary.sets},'Deload')">Log Deload Work</button></div>`}
- const used=e.weight||top,back=round5(used*p.primary.pct);
- return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Suggested top set: ${top} × ${p.primary.reps}</div></div><div class="backoff">${back} × ${p.primary.backReps} × ${p.primary.sets}</div></div><div class="fields"><input id="${id}-w" type="number" placeholder="${top}"><input id="${id}-r" type="number" value="${p.primary.reps}"><input id="${id}-p" type="number" step=".5" placeholder="8"></div><button class="btn" style="width:100%" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button></div>`;
+ const id=mainId(week,di,l),e=state.entries[id]||{},info=suggestedInfo(l,week),top=info.weight;
+ if(p.primary.test)return `<div class="lift"><div class="liftname">${l}</div><div class="small">Test day — log best attempt</div><div class="fields"><div><div class="label">Actual weight</div><input id="${id}-w" type="number" value="${e.weight||top}"></div><div><div class="label">Actual reps</div><input id="${id}-r" type="number" value="${e.reps||1}"></div><div><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${e.rpe||''}" placeholder="10"></div></div><button class="btn" style="width:100%" onclick="logPrimary('${id}','${l}',${di},1)">Log Best Attempt</button></div>`;
+ if(p.primary.deload){
+   const work=round5(state.maxes[KEYS[l]]*.60), de=state.entries[id]||{};
+   return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Deload — no top set</div></div><div class="backoff">${work} × ${p.primary.backReps} × ${p.primary.sets}</div></div>
+   <div class="actualBox"><div class="small">Actual deload work (editable)</div><div class="fields"><div><div class="label">Weight</div><input id="${id}-dw" type="number" value="${de.weight||work}"></div><div><div class="label">Reps</div><input id="${id}-dr" type="number" value="${de.reps||p.primary.backReps}"></div><div><div class="label">Sets</div><input id="${id}-ds" type="number" value="${de.sets||p.primary.sets}"></div></div></div>
+   <button class="btn secondary" style="width:100%;margin-top:12px" onclick="logDeloadEditable('${id}','${l}',${di})">Log Deload Work</button></div>`;
+ }
+ const used=Number(e.weight||top),back=round5(used*p.primary.pct);
+ return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Programmed top set: ${top} × ${p.primary.reps}</div><div class="adapt">${info.note}</div></div><div class="backoff">${back} × ${p.primary.backReps} × ${p.primary.sets}</div></div>
+ <div class="actualBox"><div class="small">Actual top set — change these to what you really did.</div>
+ <div class="fields">
+  <div><div class="label">Actual weight</div><input id="${id}-w" type="number" value="${e.weight||top}" oninput="updateBackoffPreview('${id}',${p.primary.pct},${p.primary.backReps},${p.primary.sets})"></div>
+  <div><div class="label">Actual reps</div><input id="${id}-r" type="number" value="${e.reps??p.primary.reps}"></div>
+  <div><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${e.rpe||''}" placeholder="8"></div>
+ </div></div>
+ <div id="${id}-back" class="small">Backoffs recalc from your actual top weight when entered.</div>
+ <button class="btn" style="width:100%;margin-top:10px" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button></div>`;
+}
+function updateBackoffPreview(id,pct,reps,sets){
+ const w=Number(document.getElementById(id+'-w')?.value||0);
+ const el=document.getElementById(id+'-back');
+ if(el&&w)el.textContent=`Actual-based backoff target: ${round5(w*pct)} × ${reps} × ${sets}`;
 }
 function techniqueHtml(lift,di){
- const c=getTechChoice(lift),p=getTechPrescription(lift);
- return `<div class="techCard"><div class="row"><div><div class="liftname">${c.name}</div><div class="techTarget">Targets: ${c.target}</div></div><button class="btn secondary smallbtn" onclick="openTechPicker('${lift}')">Swap</button></div><div class="small" style="margin-top:7px">${c.note}</div><div class="techMeta"><div class="metric"><span class="label">Weight</span><strong>${p.weight} lb</strong></div><div class="metric"><span class="label">Sets × Reps</span><strong>${p.sets} × ${p.reps}</strong></div><div class="metric"><span class="label">Intensity</span><strong>${Math.round(p.pct*100)}%</strong></div><div class="metric"><span class="label">Target RPE</span><strong>${p.rpe}</strong></div></div><button class="btn secondary" style="width:100%;margin-top:12px" onclick="logTech('${lift}',${di})">Log Technique Work</button></div>`;
+ const c=getTechChoice(lift),p=getTechPrescription(lift), id=`tech-${week}-${di}-${lift}-${c.id}`;
+ const e=state.entries[id]||{};
+ const aw=e.weight??p.weight, as=e.sets??p.sets, ar=e.reps??p.reps, ap=e.rpe??p.rpe;
+ return `<div class="techCard"><div class="row"><div><div class="liftname">${c.name}</div><div class="techTarget">Targets: ${c.target}</div></div><button class="btn secondary smallbtn" onclick="openTechPicker('${lift}')">Swap</button></div>
+ <div class="small" style="margin-top:7px">${c.note}</div>
+ <div class="techMeta"><div class="metric"><span class="label">Prescribed Weight</span><strong>${p.weight} lb</strong></div><div class="metric"><span class="label">Sets × Reps</span><strong>${p.sets} × ${p.reps}</strong></div><div class="metric"><span class="label">Intensity</span><strong>${Math.round(p.pct*100)}%</strong></div><div class="metric"><span class="label">Target RPE</span><strong>${p.rpe}</strong></div></div>
+ <div class="actualBox"><div class="small">Actual technique work — defaults are prefilled but editable.</div>
+ <div class="fields"><div><div class="label">Weight</div><input id="${id}-w" type="number" value="${aw}"></div><div><div class="label">Sets</div><input id="${id}-s" type="number" value="${as}"></div><div><div class="label">Reps</div><input id="${id}-r" type="number" value="${ar}"></div></div>
+ <div style="margin-top:8px"><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${ap}"></div></div>
+ <button class="btn secondary" style="width:100%;margin-top:12px" onclick="logTech('${lift}',${di},'${id}')">Log Technique Work</button></div>`;
 }
 function openTechPicker(lift){
  techPicker=lift;document.getElementById('techModalTitle').textContent=`Choose ${lift} Technique Movement`;
@@ -233,13 +323,94 @@ function openTechPicker(lift){
  document.getElementById('techModal').classList.add('open');
 }
 function selectTech(lift,id){state.techChoices[`${week}-${lift}`]=id;closeModal('techModal');save()}
-function logPrimary(id,lift,di,dr){const w=Number(document.getElementById(id+'-w').value)||suggested(lift,week),r=Number(document.getElementById(id+'-r').value)||dr,rpe=Number(document.getElementById(id+'-p').value)||8;state.entries[id]={week,day:di,lift,weight:w,reps:r,rpe,e1rm:w*(1+r/30),date:new Date().toISOString(),kind:'Primary'};save()}
-function logTech(lift,di){const c=getTechChoice(lift),p=getTechPrescription(lift),id=`tech-${week}-${di}-${lift}-${c.id}`;state.entries[id]={week,day:di,lift:c.name,weight:p.weight,reps:p.reps,sets:p.sets,rpe:p.rpe,e1rm:null,date:new Date().toISOString(),kind:`Technique: ${c.target}`};save()}
+function celebrate(){
+ const words=['SLAY','BEAST','DAWG','ANIMAL','QUEEN','BEAUT'];
+ const word=words[Math.floor(Math.random()*words.length)];
+ const box=document.getElementById('celebrate'),el=document.getElementById('celebrateWord');
+ el.textContent=word;box.classList.remove('show');void box.offsetWidth;box.classList.add('show');
+ setTimeout(()=>box.classList.remove('show'),900);
+}
+function logPrimary(id,lift,di,dr){
+ const w=Number(document.getElementById(id+'-w').value)||suggested(lift,week);
+ const r=Number(document.getElementById(id+'-r').value);
+ const rpe=Number(document.getElementById(id+'-p').value)||8;
+ const prescribedWeight=suggested(lift,week), prescribedReps=dr;
+ state.entries[id]={week,day:di,lift,weight:w,reps:r,rpe,e1rm:w*(1+r/30),date:new Date().toISOString(),kind:'Primary',prescribedWeight,prescribedReps};
+ if(!state.progression)state.progression=[];
+ if(r<prescribedReps){
+   state.progression.push({week,lift,result:'Hold',reason:`Completed ${r}/${prescribedReps} prescribed reps`,nextRecommendation:`Repeat ${w} lb next exposure`});
+ } else if(rpe>=9.5){
+   state.progression.push({week,lift,result:'Hold',reason:`Target reps completed at RPE ${rpe}`,nextRecommendation:`Repeat ${w} lb next exposure`});
+ } else {
+   state.progression.push({week,lift,result:'Progress',reason:`Completed ${r}/${prescribedReps} reps at RPE ${rpe}`,nextRecommendation:'Continue programmed progression'});
+ }
+ localStorage.setItem(KEY,JSON.stringify(state));
+ celebrate();
+ setTimeout(render,650);
+}
+function logDeloadEditable(id,lift,di){
+ const w=Number(document.getElementById(id+'-dw').value),r=Number(document.getElementById(id+'-dr').value),sets=Number(document.getElementById(id+'-ds').value);
+ state.entries[id]={week,day:di,lift,weight:w,reps:r,sets,rpe:'5–6',e1rm:null,date:new Date().toISOString(),kind:'Deload'};
+ save();
+}
+function logTech(lift,di,id){
+ const c=getTechChoice(lift),p=getTechPrescription(lift);
+ const w=Number(document.getElementById(id+'-w').value),sets=Number(document.getElementById(id+'-s').value),r=Number(document.getElementById(id+'-r').value);
+ const rawRpe=document.getElementById(id+'-p').value;
+ state.entries[id]={week,day:di,lift:c.name,parentLift:lift,weight:w,reps:r,sets,rpe:rawRpe||p.rpe,e1rm:null,date:new Date().toISOString(),kind:`Technique: ${c.target}`,prescribedWeight:p.weight,prescribedSets:p.sets,prescribedReps:p.reps};
+ save();
+}
 function logTechniqueDirect(lift,di,w,r,s,k){const id=`direct-${week}-${di}-${lift}-${Date.now()}`;state.entries[id]={week,day:di,lift,weight:w,reps:r,sets:s,rpe:'5–6',e1rm:null,date:new Date().toISOString(),kind:k};save()}
+function exportRows(){
+ const entries=Object.values(state.entries||{});
+ const main=entries.filter(e=>e.kind==='Primary').sort((a,b)=>a.week-b.week);
+ const tech=entries.filter(e=>String(e.kind||'').startsWith('Technique')).sort((a,b)=>a.week-b.week);
+ const accessory=[];
+ Object.entries(state.accessories||{}).forEach(([key,items])=>{
+   const [w,d]=key.split('-').map(Number);
+   (items||[]).forEach(item=>(item.loggedSets||[]).forEach((set,i)=>{
+     if(set.weight!==''||set.reps!=='')accessory.push({Week:w,Day:d+1,Exercise:item.name,Category:item.category,Set:i+1,Weight:Number(set.weight||0),Reps:Number(set.reps||0)});
+   }));
+ });
+ return {main,tech,accessory};
+}
+async function exportExcel(){
+ if(typeof XLSX==='undefined'){alert('Excel export library is not available. Open the app once while online, then try again.');return}
+ const {main,tech,accessory}=exportRows();
+ const wb=XLSX.utils.book_new();
+ const summary=[
+  ['Get Strong As Fudge — Training Export'],
+  ['Exported',new Date().toLocaleString()],
+  [],
+  ['Lift','Current Training Max','Best Logged e1RM'],
+  ...LIFTS.map(l=>{const vals=main.filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);return [l,state.maxes[KEYS[l]],vals.length?Math.round(Math.max(...vals)):null]})
+ ];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Summary');
+ const mainRows=main.map(e=>({Week:e.week,Day:e.day+1,Lift:e.lift,'Prescribed Weight':e.prescribedWeight,'Actual Weight':e.weight,'Prescribed Reps':e.prescribedReps,'Actual Reps':e.reps,RPE:e.rpe,e1RM:Math.round(e.e1rm||0),Date:e.date}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(mainRows.length?mainRows:[{Note:'No main-lift data yet'}]),'Main Lifts');
+ const techRows=tech.map(e=>({Week:e.week,Day:e.day+1,Variation:e.lift,'Parent Lift':e.parentLift||'','Prescribed Weight':e.prescribedWeight,'Actual Weight':e.weight,'Prescribed Sets':e.prescribedSets,'Actual Sets':e.sets,'Prescribed Reps':e.prescribedReps,'Actual Reps':e.reps,RPE:e.rpe,Target:e.kind}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(techRows.length?techRows:[{Note:'No technique data yet'}]),'Technique Work');
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(accessory.length?accessory:[{Note:'No accessory set data yet'}]),'Accessories');
+ const maxRows=LIFTS.map(l=>({Lift:l,'Training Max':state.maxes[KEYS[l]]}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(maxRows),'Training Maxes');
+ const prog=(state.progression||[]).map(x=>({Week:x.week,Lift:x.lift,Decision:x.result,Reason:x.reason,'Next Recommendation':x.nextRecommendation}));
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(prog.length?prog:[{Note:'No progression decisions yet'}]),'Progression');
+ const data=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+ const file=new File([data],`Get_Strong_As_Fudge_${new Date().toISOString().slice(0,10)}.xlsx`,{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+ try{
+   if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){
+     await navigator.share({files:[file],title:'Get Strong As Fudge Training Data',text:'Training data export'});
+   }else{
+     XLSX.writeFile(wb,file.name);
+   }
+ }catch(err){
+   if(err?.name!=='AbortError')XLSX.writeFile(wb,file.name);
+ }
+}
 function openMaxes(){document.getElementById('maxFields').innerHTML=LIFTS.map(l=>`<div style="margin-top:10px"><div class="label">${l}</div><input id="max-${KEYS[l]}" type="number" value="${state.maxes[KEYS[l]]}"></div>`).join('');document.getElementById('maxModal').classList.add('open')}
 function saveMaxes(){LIFTS.forEach(l=>state.maxes[KEYS[l]]=Number(document.getElementById('max-'+KEYS[l]).value)||0);closeModal('maxModal');save()}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
-function resetData(){if(confirm('Reset all training data?')){state={maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{}};save()}}
+function resetData(){if(confirm('Reset all training data?')){state={maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{},progression:[]};save()}}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js'))}
 render();
 </script>
