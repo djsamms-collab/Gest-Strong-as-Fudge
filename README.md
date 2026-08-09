@@ -13,3 +13,6 @@ New:
 - On supported iPhones, Excel opens the native Share Sheet for Mail, Files, AirDrop, Messages, etc.
 
 Deploy the contents of this folder to the root of the GitHub Pages repo.
+
+
+v4.1 hotfix: fixed workout rendering runtime error in recovery recommendation component.
