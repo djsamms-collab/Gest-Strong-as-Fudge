@@ -65,7 +65,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">All training data is stored locally on this device.</div>
+<div class="footer">All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div>
 
@@ -180,7 +180,7 @@ state.progression=state.progression||[];
 state.entries=state.entries||{};
 state.techChoices=state.techChoices||{};
 state.accessories=state.accessories||{};
-let week=1, techPicker=null, accessoryPicker=null;
+let week=Number(state.currentWeek)||1, techPicker=null, accessoryPicker=null;
 
 const round5=x=>Math.round(x/5)*5;
 const phaseFor=w=>PHASES.find(p=>p.weeks.includes(w));
@@ -217,7 +217,7 @@ function suggestedInfo(l,w){
  return {weight:scheduled,note:'Target achieved last week — programmed progression continues'};
 }
 function suggested(l,w){return suggestedInfo(l,w).weight}
-function save(){localStorage.setItem(KEY,JSON.stringify(state));render()}
+function save(){state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));render()}
 function getTechChoice(lift){
  const k=`${week}-${lift}`, pk=phaseKey(week), id=state.techChoices[k]||DEFAULT_TECH[pk][lift];
  return TECHNIQUE_LIBRARY[lift].find(x=>x.id===id)||TECHNIQUE_LIBRARY[lift][0];
@@ -250,15 +250,15 @@ function selectAccessory(name){
 function accessoryHtml(a,di,i){
  const count=Math.max(1,Number(a.sets||3)),rows=Array.from({length:count},(_,j)=>a.loggedSets?.[j]||{weight:'',reps:a.reps||''});
  return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select accessory'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div></div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
- <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
- <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input type="number" value="${r.weight||''}" onchange="updateAccessorySet(${di},${i},${j},'weight',this.value)"></div><div><div class="label">Reps</div><input type="number" value="${r.reps||''}" onchange="updateAccessorySet(${di},${i},${j},'reps',this.value)"></div></div>`).join('')}</div>`;
+ <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
+ <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input type="number" inputmode="decimal" value="${r.weight||''}" onchange="updateAccessorySet(${di},${i},${j},'weight',this.value)"></div><div><div class="label">Reps</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${r.reps||''}" onchange="updateAccessorySet(${di},${i},${j},'reps',this.value)"></div></div>`).join('')}</div>`;
 }
 function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><h3>Accessories</h3><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
 
 function render(){
  const p=phaseFor(week);
  document.getElementById('weekTitle').textContent=`Week ${week} — ${p.name}`;document.getElementById('phaseDesc').textContent=p.desc;
- document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button class="pill ${w===week?'active':''}" onclick="week=${w};render()">${w}</button>`).join('');
+ document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button class="pill ${w===week?'active':''}" onclick="week=${w};state.currentWeek=w;localStorage.setItem(KEY,JSON.stringify(state));render()">${w}</button>`).join('');
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
  document.getElementById('workouts').innerHTML=DAYS.map((d,i)=>workoutHtml(d,i,p)).join('');
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
@@ -282,20 +282,20 @@ function workoutHtml(day,di,p){
 }
 function primaryHtml(l,di,p){
  const id=mainId(week,di,l),e=state.entries[id]||{},info=suggestedInfo(l,week),top=info.weight;
- if(p.primary.test)return `<div class="lift"><div class="liftname">${l}</div><div class="small">Test day — log best attempt</div><div class="fields"><div><div class="label">Actual weight</div><input id="${id}-w" type="number" value="${e.weight||top}"></div><div><div class="label">Actual reps</div><input id="${id}-r" type="number" value="${e.reps||1}"></div><div><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${e.rpe||''}" placeholder="10"></div></div><button class="btn" style="width:100%" onclick="logPrimary('${id}','${l}',${di},1)">Log Best Attempt</button></div>`;
+ if(p.primary.test)return `<div class="lift"><div class="liftname">${l}</div><div class="small">Test day — log best attempt</div><div class="fields"><div><div class="label">Actual weight</div><input id="${id}-w" type="number" inputmode="decimal" value="${e.weight||top}"></div><div><div class="label">Actual reps</div><input id="${id}-r" type="number" inputmode="numeric" pattern="[0-9]*" value="${e.reps||1}"></div><div><div class="label">Actual RPE</div><input id="${id}-p" type="number" inputmode="decimal" step=".5" value="${e.rpe||''}" placeholder="10"></div></div><button class="btn" style="width:100%" onclick="logPrimary('${id}','${l}',${di},1)">Log Best Attempt</button></div>`;
  if(p.primary.deload){
    const work=round5(state.maxes[KEYS[l]]*.60), de=state.entries[id]||{};
    return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Deload — no top set</div></div><div class="backoff">${work} × ${p.primary.backReps} × ${p.primary.sets}</div></div>
-   <div class="actualBox"><div class="small">Actual deload work (editable)</div><div class="fields"><div><div class="label">Weight</div><input id="${id}-dw" type="number" value="${de.weight||work}"></div><div><div class="label">Reps</div><input id="${id}-dr" type="number" value="${de.reps||p.primary.backReps}"></div><div><div class="label">Sets</div><input id="${id}-ds" type="number" value="${de.sets||p.primary.sets}"></div></div></div>
+   <div class="actualBox"><div class="small">Actual deload work (editable)</div><div class="fields"><div><div class="label">Weight</div><input id="${id}-dw" type="number" inputmode="decimal" value="${de.weight||work}"></div><div><div class="label">Reps</div><input id="${id}-dr" type="number" inputmode="numeric" pattern="[0-9]*" value="${de.reps||p.primary.backReps}"></div><div><div class="label">Sets</div><input id="${id}-ds" type="number" inputmode="numeric" pattern="[0-9]*" value="${de.sets||p.primary.sets}"></div></div></div>
    <button class="btn secondary" style="width:100%;margin-top:12px" onclick="logDeloadEditable('${id}','${l}',${di})">Log Deload Work</button></div>`;
  }
  const used=Number(e.weight||top),back=round5(used*p.primary.pct);
  return `<div class="lift"><div class="row"><div><div class="liftname">${l}</div><div class="small">Programmed top set: ${top} × ${p.primary.reps}</div><div class="adapt">${info.note}</div></div><div class="backoff">${back} × ${p.primary.backReps} × ${p.primary.sets}</div></div>
  <div class="actualBox"><div class="small">Actual top set — change these to what you really did.</div>
  <div class="fields">
-  <div><div class="label">Actual weight</div><input id="${id}-w" type="number" value="${e.weight||top}" oninput="updateBackoffPreview('${id}',${p.primary.pct},${p.primary.backReps},${p.primary.sets})"></div>
-  <div><div class="label">Actual reps</div><input id="${id}-r" type="number" value="${e.reps??p.primary.reps}"></div>
-  <div><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${e.rpe||''}" placeholder="8"></div>
+  <div><div class="label">Actual weight</div><input id="${id}-w" type="number" inputmode="decimal" value="${e.weight||top}" oninput="updateBackoffPreview('${id}',${p.primary.pct},${p.primary.backReps},${p.primary.sets})"></div>
+  <div><div class="label">Actual reps</div><input id="${id}-r" type="number" inputmode="numeric" pattern="[0-9]*" value="${e.reps??p.primary.reps}"></div>
+  <div><div class="label">Actual RPE</div><input id="${id}-p" type="number" inputmode="decimal" step=".5" value="${e.rpe||''}" placeholder="8"></div>
  </div></div>
  <div id="${id}-back" class="small">Backoffs recalc from your actual top weight when entered.</div>
  <button class="btn" style="width:100%;margin-top:10px" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button></div>`;
@@ -313,8 +313,8 @@ function techniqueHtml(lift,di){
  <div class="small" style="margin-top:7px">${c.note}</div>
  <div class="techMeta"><div class="metric"><span class="label">Prescribed Weight</span><strong>${p.weight} lb</strong></div><div class="metric"><span class="label">Sets × Reps</span><strong>${p.sets} × ${p.reps}</strong></div><div class="metric"><span class="label">Intensity</span><strong>${Math.round(p.pct*100)}%</strong></div><div class="metric"><span class="label">Target RPE</span><strong>${p.rpe}</strong></div></div>
  <div class="actualBox"><div class="small">Actual technique work — defaults are prefilled but editable.</div>
- <div class="fields"><div><div class="label">Weight</div><input id="${id}-w" type="number" value="${aw}"></div><div><div class="label">Sets</div><input id="${id}-s" type="number" value="${as}"></div><div><div class="label">Reps</div><input id="${id}-r" type="number" value="${ar}"></div></div>
- <div style="margin-top:8px"><div class="label">Actual RPE</div><input id="${id}-p" type="number" step=".5" value="${ap}"></div></div>
+ <div class="fields"><div><div class="label">Weight</div><input id="${id}-w" type="number" inputmode="decimal" value="${aw}"></div><div><div class="label">Sets</div><input id="${id}-s" type="number" inputmode="numeric" pattern="[0-9]*" value="${as}"></div><div><div class="label">Reps</div><input id="${id}-r" type="number" inputmode="numeric" pattern="[0-9]*" value="${ar}"></div></div>
+ <div style="margin-top:8px"><div class="label">Actual RPE</div><input id="${id}-p" type="number" inputmode="decimal" step=".5" value="${ap}"></div></div>
  <button class="btn secondary" style="width:100%;margin-top:12px" onclick="logTech('${lift}',${di},'${id}')">Log Technique Work</button></div>`;
 }
 function openTechPicker(lift){
@@ -407,10 +407,10 @@ async function exportExcel(){
    if(err?.name!=='AbortError')XLSX.writeFile(wb,file.name);
  }
 }
-function openMaxes(){document.getElementById('maxFields').innerHTML=LIFTS.map(l=>`<div style="margin-top:10px"><div class="label">${l}</div><input id="max-${KEYS[l]}" type="number" value="${state.maxes[KEYS[l]]}"></div>`).join('');document.getElementById('maxModal').classList.add('open')}
+function openMaxes(){document.getElementById('maxFields').innerHTML=LIFTS.map(l=>`<div style="margin-top:10px"><div class="label">${l}</div><input id="max-${KEYS[l]}" type="number" inputmode="decimal" value="${state.maxes[KEYS[l]]}"></div>`).join('');document.getElementById('maxModal').classList.add('open')}
 function saveMaxes(){LIFTS.forEach(l=>state.maxes[KEYS[l]]=Number(document.getElementById('max-'+KEYS[l]).value)||0);closeModal('maxModal');save()}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
-function resetData(){if(confirm('Reset all training data?')){state={maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{},progression:[]};save()}}
+function resetData(){if(confirm('Reset all training data?')){state={maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{},progression:[],currentWeek:1};week=1;save()}}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js'))}
 render();
 </script>

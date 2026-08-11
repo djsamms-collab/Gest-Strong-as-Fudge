@@ -1,18 +1,20 @@
-# Get Strong As Fudge PWA v4
+# Get Strong As Fudge PWA v5
 
-New:
-- Prescribed values are prefilled, but actual weight/sets/reps/RPE are editable and permanently logged.
-- Primary progression adapts to prior-week performance:
-  - missed prescribed reps -> hold the same top-set load next week
-  - target achieved at RPE 9.5+ -> hold
-  - target achieved below that -> continue programmed progression
-- Technique swaps immediately repopulate the variation-specific weight, sets, reps, and RPE.
-- Random primary-lift celebrations: SLAY, BEAST, DAWG, ANIMAL, QUEEN, BEAUT.
-- Cardio/recovery reminder at the end of each workout.
-- Excel export with Summary, Main Lifts, Technique Work, Accessories, Training Maxes, and Progression sheets.
-- On supported iPhones, Excel opens the native Share Sheet for Mail, Files, AirDrop, Messages, etc.
+New in v5:
+- Weight fields open the phone numeric/decimal keypad.
+- RPE fields open the decimal keypad.
+- Sets and reps open the integer number keypad.
+- The app remembers the currently selected training week.
+- Reopening the app returns to that week rather than Week 1.
+- The app does not auto-advance weeks; you stay in control.
 
-Deploy the contents of this folder to the root of the GitHub Pages repo.
-
-
-v4.1 hotfix: fixed workout rendering runtime error in recovery recommendation component.
+Preserved:
+- Prescribed vs actual logging
+- Adaptive next-week progression
+- Technique movement swaps
+- Variation-specific sets/reps/intensity/RPE
+- Accessory logging and deletion
+- Primary-lift celebrations
+- Cardio/recovery recommendations
+- Excel export / Share Sheet
+- Editable training maxes
