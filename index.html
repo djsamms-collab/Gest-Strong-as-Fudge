@@ -21,7 +21,7 @@ h1{margin:3px 0 0;font-size:34px;line-height:1;font-weight:900;letter-spacing:-1
 main{padding:16px 16px calc(42px + env(safe-area-inset-bottom));max-width:900px;margin:auto}
 .panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:18px}.panel{padding:16px;margin-top:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.card{padding:14px}
 .big{font-size:25px;font-weight:900;margin:4px 0}.label,.small{font-size:12px;color:var(--muted)}.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.weeks{display:flex;gap:8px;overflow:auto;padding-top:14px}.pill,.btn{border:0;border-radius:11px;font-weight:900}.pill{min-width:42px;height:42px;background:var(--panel2);color:var(--muted)}
+.weeknav{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center;margin-top:14px}.weeknav .btn:last-child{justify-self:stretch}.weeknav .btn:first-child{justify-self:stretch}.weekjump{font-weight:900;text-align:center;min-width:112px}.weeks{display:flex;gap:8px;overflow:auto;padding-top:10px;scroll-behavior:smooth}.pill,.btn{border:0;border-radius:11px;font-weight:900}.pill{min-width:42px;height:42px;background:var(--panel2);color:var(--muted)}
 .pill.active{background:var(--accent);color:#1B160B}.btn{padding:11px 14px;background:var(--accent);color:#1B160B}.btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 .btn.danger{background:#452126;color:#FFD9D9}.btn.smallbtn{padding:8px 10px;font-size:12px}
 .lift{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}.liftname{font-size:18px;font-weight:900}.backoff{color:var(--accent);font-weight:900;text-align:right}
@@ -55,7 +55,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 <header><div class="eyebrow">16-WEEK AUTOREGULATED STRENGTH SYSTEM</div><h1>Get Strong As Fudge</h1><div class="sub">Heavy primary days. Programmed technique work with weak-point overrides.</div></header>
 <main>
 <div class="grid" id="summary"></div>
-<section class="panel"><div class="row"><div><h2 id="weekTitle"></h2><div class="small" id="phaseDesc"></div></div><button class="btn secondary" onclick="openMaxes()">Update Maxes</button></div><div class="weeks" id="weeks"></div></section>
+<section class="panel"><div class="row"><div><h2 id="weekTitle"></h2><div class="small" id="phaseDesc"></div></div><button class="btn secondary" onclick="openMaxes()">Update Maxes</button></div><div class="weeknav"><button id="prevWeek" class="btn secondary" onclick="changeWeek(-1)">← Previous</button><select id="weekJump" class="weekjump" aria-label="Jump to week" onchange="setWeek(Number(this.value))"></select><button id="nextWeek" class="btn secondary" onclick="changeWeek(1)">Next →</button></div><div class="weeks" id="weeks"></div><div class="small" style="margin-top:9px">You can move backward or forward at any time. Logged workouts stay attached to their original week.</div></section>
 <div id="workouts"></div>
 <section class="panel"><h2>Recent Main-Lift Entries</h2><div id="recent"></div></section>
 <section class="panel">
@@ -217,6 +217,14 @@ function suggestedInfo(l,w){
  return {weight:scheduled,note:'Target achieved last week — programmed progression continues'};
 }
 function suggested(l,w){return suggestedInfo(l,w).weight}
+function setWeek(w){
+ week=Math.max(1,Math.min(16,Number(w)||1));
+ state.currentWeek=week;
+ localStorage.setItem(KEY,JSON.stringify(state));
+ render();
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+function changeWeek(delta){setWeek(week+delta)}
 function save(){state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));render()}
 function getTechChoice(lift){
  const k=`${week}-${lift}`, pk=phaseKey(week), id=state.techChoices[k]||DEFAULT_TECH[pk][lift];
@@ -258,7 +266,11 @@ function accessoriesSection(di){return `<div class="row" style="margin-top:20px"
 function render(){
  const p=phaseFor(week);
  document.getElementById('weekTitle').textContent=`Week ${week} — ${p.name}`;document.getElementById('phaseDesc').textContent=p.desc;
- document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button class="pill ${w===week?'active':''}" onclick="week=${w};state.currentWeek=w;localStorage.setItem(KEY,JSON.stringify(state));render()">${w}</button>`).join('');
+ document.getElementById('weekJump').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<option value="${w}" ${w===week?'selected':''}>Week ${w}</option>`).join('');
+ document.getElementById('prevWeek').disabled=week===1; document.getElementById('nextWeek').disabled=week===16;
+ document.getElementById('prevWeek').style.opacity=week===1?'.45':'1'; document.getElementById('nextWeek').style.opacity=week===16?'.45':'1';
+ document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button data-week="${w}" class="pill ${w===week?'active':''}" onclick="setWeek(${w})">${w}</button>`).join('');
+ requestAnimationFrame(()=>document.querySelector('.pill.active')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}));
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
  document.getElementById('workouts').innerHTML=DAYS.map((d,i)=>workoutHtml(d,i,p)).join('');
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
