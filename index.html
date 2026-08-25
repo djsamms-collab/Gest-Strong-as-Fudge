@@ -74,7 +74,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 <div id="techModal" class="modal"><div class="sheet"><h2 id="techModalTitle">Choose Technique Movement</h2><div class="small">Each choice targets a specific problem and carries its own volume/intensity prescription.</div><div id="techOptions"></div><button class="btn secondary" style="width:100%;margin-top:10px" onclick="closeModal('techModal')">Cancel</button></div></div>
 
 
-<div id="accessoryModal" class="modal"><div class="sheet"><h2>Choose Accessory</h2><div class="small">Choose a replacement from the same movement category.</div><div id="accessoryOptions"></div><button class="btn secondary" style="width:100%;margin-top:10px" onclick="closeModal('accessoryModal')">Cancel</button></div></div>
+<div id="accessoryModal" class="modal"><div class="sheet"><h2>Choose Auxiliary</h2><div class="small">Choose any optional movement or machine available at your gym.</div><div id="accessoryOptions"></div><button class="btn secondary" style="width:100%;margin-top:10px" onclick="closeModal('accessoryModal')">Cancel</button></div></div>
 
 <script>
 const LIFTS=['Squat','Bench','Deadlift','OHP'], KEYS={Squat:'squat',Bench:'bench',Deadlift:'deadlift',OHP:'ohp'};
@@ -154,17 +154,20 @@ const DEFAULT_TECH={
 
 
 const ACCESSORY_GROUPS={
- 'Squat / Quad':['Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','High-Bar Squat','Leg Press','Bulgarian Split Squat'],
+ 'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
  'Vertical Pull':['Weighted Pull-Up','Pull-Up','Chin-Up','Lat Pulldown','Neutral-Grip Pulldown'],
  'Core':['Ab Wheel','Hanging Leg Raise','Cable Crunch','Dead Bug','Plank','Pallof Press'],
  'Bench / Triceps':['Close-Grip Bench','Spoto Press','Floor Press','JM Press','Weighted Dip','Triceps Pushdown'],
- 'Horizontal Pull':['Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row'],
+ 'Horizontal Pull':['Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row','Lever Row','Plate-Loaded Row'],
  'Rear Delt / Scapular':['Face Pull','Reverse Pec Deck','Band Pull-Apart','Rear-Delt Row'],
- 'Upper Chest / Press':['Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press'],
+ 'Upper Chest / Press':['Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press'],
  'Lateral Delt':['Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away Lateral Raise'],
- 'Hinge / Hamstring':['Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Hamstring Curl'],
+ 'Hinge / Hamstring':['Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Seated Hamstring Curl','Lying Hamstring Curl','Hamstring Curl','Glute-Ham Raise','Reverse Hyper'],
  'Dip / Triceps':['Weighted Dip','Close-Grip Bench','JM Press','Skull Crusher','Triceps Pushdown'],
- 'General':['Farmer Carry','Sled Push','Sled Drag','Calf Raise','Custom Exercise']
+ 'Glute / Hip':['Hip Thrust','Glute Bridge','Cable Pull-Through','Hip Abduction Machine','Hip Adduction Machine'],
+ 'Calves':['Standing Calf Raise','Seated Calf Raise','Leg-Press Calf Raise'],
+ 'Biceps / Arms':['Dumbbell Curl','Hammer Curl','Cable Curl','Preacher Curl'],
+ 'General':['Farmer Carry','Sled Push','Sled Drag','Custom Exercise']
 };
 const EXCAT={};Object.entries(ACCESSORY_GROUPS).forEach(([c,items])=>items.forEach(x=>EXCAT[x]=c));
 const DEFAULT_ACC={
@@ -244,24 +247,53 @@ function setDayAccessories(di,list){state.accessories[`${week}-${di}`]=list;save
 function addAccessory(di){const list=[...dayAccessories(di),{name:'',category:'General',sets:'3',reps:'8',loggedSets:[]}];setDayAccessories(di,list)}
 function removeAccessory(di,i){const item=dayAccessories(di)[i];if(confirm(`Delete ${item?.name||'this accessory'} from this workout?`))setDayAccessories(di,dayAccessories(di).filter((_,x)=>x!==i))}
 function updateAccessory(di,i,k,v){const list=[...dayAccessories(di)];list[i]={...list[i],[k]:v};setDayAccessories(di,list)}
-function updateAccessorySet(di,i,j,k,v){const list=[...dayAccessories(di)],item={...list[i]},rows=[...(item.loggedSets||[])];rows[j]={...(rows[j]||{}),[k]:v};item.loggedSets=rows;list[i]=item;setDayAccessories(di,list)}
+function updateAccessorySet(di,i,j,k,v){
+ const list=[...dayAccessories(di)],item={...list[i]},rows=[...(item.loggedSets||[])];
+ const existing={...(rows[j]||{})};
+ // Keep the programmed rep target unless the user explicitly edits/deletes it.
+ if(existing.reps===undefined)existing.reps=String(item.reps??'');
+ rows[j]={...existing,[k]:v};item.loggedSets=rows;list[i]=item;
+ state.accessories[`${week}-${di}`]=list;state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));
+}
+function focusNextAccessory(di,i,j,k){
+ const next=document.getElementById(`acc-${di}-${i}-${j+1}-${k}`);
+ if(next){next.focus();next.select?.()}
+}
+function accessoryKey(ev,di,i,j,k){
+ if(ev.key==='Enter'){
+   ev.preventDefault();updateAccessorySet(di,i,j,k,ev.target.value);focusNextAccessory(di,i,j,k);
+ }
+}
 function openAccessoryPicker(di,i){
- accessoryPicker={di,i};const item=dayAccessories(di)[i]||{},cat=item.category||EXCAT[item.name]||'General';
- const opts=ACCESSORY_GROUPS[cat]||ACCESSORY_GROUPS.General;
- document.getElementById('accessoryOptions').innerHTML=`<div class="techTarget">Movement category: ${cat}</div>`+opts.map(x=>`<button class="optionbtn" onclick="selectAccessory('${x.replaceAll("'","\\'")}')"><strong>${x}</strong></button>`).join('');
+ accessoryPicker={di,i};const item=dayAccessories(di)[i]||{},cat=item.category||EXCAT[item.name]||'';
+ const groups=Object.entries(ACCESSORY_GROUPS);
+ const preferred=cat&&ACCESSORY_GROUPS[cat]?[cat]:[];
+ const ordered=[...preferred.map(c=>[c,ACCESSORY_GROUPS[c]]),...groups.filter(([c])=>!preferred.includes(c))];
+ document.getElementById('accessoryOptions').innerHTML=`<div class="small" style="margin:8px 0 12px">Pick any optional auxiliary. Your current category is shown first, but you can choose from every group.</div>`+
+ ordered.map(([c,opts])=>`<div class="techTarget" style="margin-top:14px">${c}</div>${opts.map(x=>`<button class="optionbtn" onclick="selectAccessory('${x.replaceAll("'","\\'")}')"><strong>${x}</strong></button>`).join('')}`).join('')+
+ `<button class="optionbtn" onclick="customAccessory()"><strong>+ Custom auxiliary</strong><span>Name any machine or movement at your gym.</span></button>`;
  document.getElementById('accessoryModal').classList.add('open');
 }
 function selectAccessory(name){
  const {di,i}=accessoryPicker,list=[...dayAccessories(di)],item={...list[i]};
  item.name=name;item.category=EXCAT[name]||item.category||'General';list[i]=item;state.accessories[`${week}-${di}`]=list;closeModal('accessoryModal');save();
 }
-function accessoryHtml(a,di,i){
- const count=Math.max(1,Number(a.sets||3)),rows=Array.from({length:count},(_,j)=>a.loggedSets?.[j]||{weight:'',reps:a.reps||''});
- return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select accessory'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div></div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
- <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
- <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input type="number" inputmode="decimal" value="${r.weight||''}" onchange="updateAccessorySet(${di},${i},${j},'weight',this.value)"></div><div><div class="label">Reps</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${r.reps||''}" onchange="updateAccessorySet(${di},${i},${j},'reps',this.value)"></div></div>`).join('')}</div>`;
+function customAccessory(){
+ const name=prompt('Name this auxiliary exercise:');if(!name?.trim())return;
+ const {di,i}=accessoryPicker,list=[...dayAccessories(di)],item={...list[i]};
+ item.name=name.trim();item.category='Custom';list[i]=item;state.accessories[`${week}-${di}`]=list;closeModal('accessoryModal');save();
 }
-function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><h3>Accessories</h3><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
+function accessoryHtml(a,di,i){
+ const count=Math.max(1,Number(a.sets||3));
+ const rows=Array.from({length:count},(_,j)=>{
+   const saved=a.loggedSets?.[j];
+   return saved?{...saved,reps:saved.reps===undefined?String(a.reps||''):saved.reps}:{weight:'',reps:String(a.reps||'')};
+ });
+ return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div></div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
+ <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
+ <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input id="acc-${di}-${i}-${j}-weight" type="number" inputmode="decimal" enterkeyhint="next" value="${r.weight??''}" onblur="updateAccessorySet(${di},${i},${j},'weight',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'weight')"></div><div><div class="label">Reps</div><input id="acc-${di}-${i}-${j}-reps" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" value="${r.reps??''}" onblur="updateAccessorySet(${di},${i},${j},'reps',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'reps')"></div></div>`).join('')}</div>`;
+}
+function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><div><h3>Optional Auxiliaries</h3><div class="small">Use what your gym has. These do not change the main program progression.</div></div><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
 
 function render(){
  const p=phaseFor(week);

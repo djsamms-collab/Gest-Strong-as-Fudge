@@ -1,12 +1,13 @@
-# Get Strong As Fudge PWA v5
+# Get Strong As Fudge PWA v7
 
-New in v5:
-- Weight fields open the phone numeric/decimal keypad.
-- RPE fields open the decimal keypad.
-- Sets and reps open the integer number keypad.
-- The app remembers the currently selected training week.
-- Reopening the app returns to that week rather than Week 1.
-- The app does not auto-advance weeks; you stay in control.
+New in v7:
+- Accessory/auxiliary reps stay prefilled when a weight is entered.
+- Pressing the keyboard check/Enter on an auxiliary weight advances to the next set's weight.
+- Pressing the keyboard check/Enter on reps advances to the next set's reps.
+- Expanded optional auxiliary library: belt squat, pendulum squat, lever squat, hack squat, V-squat, machine/lever presses and rows, hamstring machines, hip work, arms, calves, and more.
+- Auxiliary picker can browse every movement category instead of being locked to one category.
+- Custom auxiliary exercises can be named and logged.
+- Week backward/forward navigation from v6 is preserved.
 
 Preserved:
 - Prescribed vs actual logging
