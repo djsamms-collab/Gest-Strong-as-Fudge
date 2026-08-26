@@ -154,19 +154,19 @@ const DEFAULT_TECH={
 
 
 const ACCESSORY_GROUPS={
- 'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
+ 'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','Safety-Bar Good Morning','Safety-Bar Bulgarian Split Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
  'Vertical Pull':['Weighted Pull-Up','Pull-Up','Chin-Up','Lat Pulldown','Neutral-Grip Pulldown'],
  'Core':['Ab Wheel','Hanging Leg Raise','Cable Crunch','Dead Bug','Plank','Pallof Press'],
  'Bench / Triceps':['Close-Grip Bench','Spoto Press','Floor Press','JM Press','Weighted Dip','Triceps Pushdown'],
  'Horizontal Pull':['Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row','Lever Row','Plate-Loaded Row'],
  'Rear Delt / Scapular':['Face Pull','Reverse Pec Deck','Band Pull-Apart','Rear-Delt Row'],
- 'Upper Chest / Press':['Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press'],
+ 'Upper Chest / Press':['Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press','Converging Chest Press','Machine Incline Press','Lever Incline Press','Machine Shoulder Press','Lever Shoulder Press'],
  'Lateral Delt':['Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away Lateral Raise'],
  'Hinge / Hamstring':['Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Seated Hamstring Curl','Lying Hamstring Curl','Hamstring Curl','Glute-Ham Raise','Reverse Hyper'],
  'Dip / Triceps':['Weighted Dip','Close-Grip Bench','JM Press','Skull Crusher','Triceps Pushdown'],
  'Glute / Hip':['Hip Thrust','Glute Bridge','Cable Pull-Through','Hip Abduction Machine','Hip Adduction Machine'],
  'Calves':['Standing Calf Raise','Seated Calf Raise','Leg-Press Calf Raise'],
- 'Biceps / Arms':['Dumbbell Curl','Hammer Curl','Cable Curl','Preacher Curl'],
+ 'Biceps / Arms':['Dumbbell Curl','Hammer Curl','Cable Curl','Preacher Curl','Machine Preacher Curl','Plate-Loaded Preacher Curl','Lever Preacher Curl'],
  'General':['Farmer Carry','Sled Push','Sled Drag','Custom Exercise']
 };
 const EXCAT={};Object.entries(ACCESSORY_GROUPS).forEach(([c,items])=>items.forEach(x=>EXCAT[x]=c));
@@ -283,6 +283,17 @@ function customAccessory(){
  const {di,i}=accessoryPicker,list=[...dayAccessories(di)],item={...list[i]};
  item.name=name.trim();item.category='Custom';list[i]=item;state.accessories[`${week}-${di}`]=list;closeModal('accessoryModal');save();
 }
+function accessoryRoleDefaults(role){
+ if(role==='Technique')return {sets:3,reps:5,note:'Controlled reps · RPE 6–7 · use this to practice positions or movement quality.'};
+ if(role==='Tonnage')return {sets:4,reps:8,note:'Accumulate productive work · RPE 6–8 · stop well before form breaks down.'};
+ if(role==='Hypertrophy')return {sets:3,reps:10,note:'Muscle-building volume · usually 8–15 reps · RPE 7–9.'};
+ return {sets:3,reps:8,note:'Optional supplemental work · keep it recoverable so the primary lift remains the priority.'};
+}
+function accessoryRoleChange(di,i,v){
+ const list=[...dayAccessories(di)], item={...list[i]}, d=accessoryRoleDefaults(v);
+ item.role=v; item.sets=String(d.sets); item.reps=String(d.reps); item.loggedSets=[]; list[i]=item; setDayAccessories(di,list);
+}
+function accessoryGuidance(a){return accessoryRoleDefaults(a.role||'Supplemental').note}
 function accessoryHtml(a,di,i){
  const count=Math.max(1,Number(a.sets||3));
  const rows=Array.from({length:count},(_,j)=>{
@@ -290,10 +301,11 @@ function accessoryHtml(a,di,i){
    return saved?{...saved,reps:saved.reps===undefined?String(a.reps||''):saved.reps}:{weight:'',reps:String(a.reps||'')};
  });
  return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div></div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
+ <div style="margin-top:10px"><div class="label">Use this movement for</div><select onchange="accessoryRoleChange(${di},${i},this.value)"><option ${!a.role||a.role==='Supplemental'?'selected':''}>Supplemental</option><option ${a.role==='Technique'?'selected':''}>Technique</option><option ${a.role==='Tonnage'?'selected':''}>Tonnage</option><option ${a.role==='Hypertrophy'?'selected':''}>Hypertrophy</option></select><div class="small" style="margin-top:6px">${accessoryGuidance(a)}</div></div>
  <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
  <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input id="acc-${di}-${i}-${j}-weight" type="number" inputmode="decimal" enterkeyhint="next" value="${r.weight??''}" onblur="updateAccessorySet(${di},${i},${j},'weight',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'weight')"></div><div><div class="label">Reps</div><input id="acc-${di}-${i}-${j}-reps" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" value="${r.reps??''}" onblur="updateAccessorySet(${di},${i},${j},'reps',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'reps')"></div></div>`).join('')}</div>`;
 }
-function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><div><h3>Optional Auxiliaries</h3><div class="small">Use what your gym has. These do not change the main program progression.</div></div><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
+function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><div><h3>Supplemental / Auxiliary Work</h3><div class="small">Do the programmed primary movement first, then use available machines or specialty bars for technique, tonnage, or hypertrophy. This work does not change the main-lift progression.</div></div><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
 
 function render(){
  const p=phaseFor(week);
@@ -413,7 +425,7 @@ function exportRows(){
  Object.entries(state.accessories||{}).forEach(([key,items])=>{
    const [w,d]=key.split('-').map(Number);
    (items||[]).forEach(item=>(item.loggedSets||[]).forEach((set,i)=>{
-     if(set.weight!==''||set.reps!=='')accessory.push({Week:w,Day:d+1,Exercise:item.name,Category:item.category,Set:i+1,Weight:Number(set.weight||0),Reps:Number(set.reps||0)});
+     if(set.weight!==''||set.reps!=='')accessory.push({Week:w,Day:d+1,Exercise:item.name,Category:item.category,Purpose:item.role||'Supplemental',Set:i+1,Weight:Number(set.weight||0),Reps:Number(set.reps||0)});
    }));
  });
  return {main,tech,accessory};
@@ -454,6 +466,7 @@ async function exportExcel(){
 function openMaxes(){document.getElementById('maxFields').innerHTML=LIFTS.map(l=>`<div style="margin-top:10px"><div class="label">${l}</div><input id="max-${KEYS[l]}" type="number" inputmode="decimal" value="${state.maxes[KEYS[l]]}"></div>`).join('');document.getElementById('maxModal').classList.add('open')}
 function saveMaxes(){LIFTS.forEach(l=>state.maxes[KEYS[l]]=Number(document.getElementById('max-'+KEYS[l]).value)||0);closeModal('maxModal');save()}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)closeModal(m.id)}));
 function resetData(){if(confirm('Reset all training data?')){state={maxes:{squat:455,bench:340,deadlift:515,ohp:185},entries:{},techChoices:{},accessories:{},progression:[],currentWeek:1};week=1;save()}}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('service-worker.js'))}
 render();

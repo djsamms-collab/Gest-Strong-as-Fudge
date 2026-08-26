@@ -1,21 +1,9 @@
-# Get Strong As Fudge PWA v7
+# Get Strong As Fudge PWA v8
 
-New in v7:
-- Accessory/auxiliary reps stay prefilled when a weight is entered.
-- Pressing the keyboard check/Enter on an auxiliary weight advances to the next set's weight.
-- Pressing the keyboard check/Enter on reps advances to the next set's reps.
-- Expanded optional auxiliary library: belt squat, pendulum squat, lever squat, hack squat, V-squat, machine/lever presses and rows, hamstring machines, hip work, arms, calves, and more.
-- Auxiliary picker can browse every movement category instead of being locked to one category.
-- Custom auxiliary exercises can be named and logged.
-- Week backward/forward navigation from v6 is preserved.
-
-Preserved:
-- Prescribed vs actual logging
-- Adaptive next-week progression
-- Technique movement swaps
-- Variation-specific sets/reps/intensity/RPE
-- Accessory logging and deletion
-- Primary-lift celebrations
-- Cardio/recovery recommendations
-- Excel export / Share Sheet
-- Editable training maxes
+Updates:
+- Tap/click outside the auxiliary, technique, or maxes sheet to dismiss it.
+- Expanded specialty equipment: belt squat, pendulum, lever squat, hack squat, V-squat, leg press, hip thrust, safety-bar squat/good morning/Bulgarian split squat, machine/lever presses, and machine/plate-loaded/lever preacher curls.
+- Supplemental movements can be assigned a purpose: Technique, Tonnage, Hypertrophy, or Supplemental.
+- Purpose selection provides sensible default sets/reps and effort guidance while keeping the programmed primary lift first.
+- Supplemental work remains separate from main-lift progression.
+- Keeps v7 logging behavior: reps persist and Enter/check advances to the next set input.
