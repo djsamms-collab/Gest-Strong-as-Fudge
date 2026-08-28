@@ -228,7 +228,7 @@ function setWeek(w){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 function changeWeek(delta){setWeek(week+delta)}
-function save(){state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));render()}
+function save(){const y=window.scrollY;state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}))}
 function getTechChoice(lift){
  const k=`${week}-${lift}`, pk=phaseKey(week), id=state.techChoices[k]||DEFAULT_TECH[pk][lift];
  return TECHNIQUE_LIBRARY[lift].find(x=>x.id===id)||TECHNIQUE_LIBRARY[lift][0];
@@ -314,7 +314,7 @@ function render(){
  document.getElementById('prevWeek').disabled=week===1; document.getElementById('nextWeek').disabled=week===16;
  document.getElementById('prevWeek').style.opacity=week===1?'.45':'1'; document.getElementById('nextWeek').style.opacity=week===16?'.45':'1';
  document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button data-week="${w}" class="pill ${w===week?'active':''}" onclick="setWeek(${w})">${w}</button>`).join('');
- requestAnimationFrame(()=>document.querySelector('.pill.active')?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}));
+ requestAnimationFrame(()=>{const active=document.querySelector('.pill.active'),strip=document.getElementById('weeks');if(active&&strip){strip.scrollLeft=active.offsetLeft-(strip.clientWidth-active.clientWidth)/2}});
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
  document.getElementById('workouts').innerHTML=DAYS.map((d,i)=>workoutHtml(d,i,p)).join('');
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
