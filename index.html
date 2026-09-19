@@ -48,6 +48,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 .exportNote{font-size:12px;color:var(--muted);margin-top:8px}
 .adapt{color:var(--green);font-size:12px;font-weight:800;margin-top:5px}
 .actualBox{background:#11192B;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+.chainToggle{display:flex;align-items:center;gap:9px;margin-top:10px;padding:10px 12px;background:#0D1426;border:1px solid var(--line);border-radius:11px;font-weight:800}.chainToggle input{width:auto;transform:scale(1.2)}.completedCard{cursor:pointer;padding:14px 16px}.completedCard .doneMark{color:var(--green);font-weight:1000}.completedCard .expandHint{color:var(--accent);font-size:12px;font-weight:900}.lastWeight{color:var(--green);font-size:11px;font-weight:800;margin-top:3px}
 
 .unitBadge{display:none;margin-top:10px;padding:9px 12px;border:1px solid var(--accent);border-radius:12px;color:var(--accent);font-weight:1000;text-align:center}.unitBadge.show{display:block}.purpose{display:inline-block;padding:4px 7px;border-radius:999px;background:#26344d;color:var(--green);font-size:11px;font-weight:900}.finishBtn{margin-top:16px;width:100%}.bwrow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}.splash{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;text-align:center;padding:30px;background:rgba(7,10,20,.94)}.splash.show{display:flex;animation:splashOut 1.7s ease both}.splashText{font-size:min(12vw,64px);font-weight:1000;line-height:.95;color:var(--accent)}.splashText span{display:block;color:var(--text);font-size:.32em;letter-spacing:2px;margin-top:14px}@keyframes splashOut{0%{opacity:0;transform:scale(.88)}15%,72%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.08)}}</style>
 </head>
@@ -65,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v11 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -164,7 +165,7 @@ const ACCESSORY_GROUPS={
  'Bench / Triceps':['Close-Grip Bench','Spoto Press','Floor Press','JM Press','Weighted Dip','Triceps Pushdown'],
  'Horizontal Pull':['Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row','Lever Row','Plate-Loaded Row'],
  'Rear Delt / Scapular':['Face Pull','Reverse Pec Deck','Band Pull-Apart','Rear-Delt Row'],
- 'Upper Chest / Press':['Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press','Converging Chest Press','Machine Incline Press','Lever Incline Press','Machine Shoulder Press','Lever Shoulder Press'],
+ 'Upper Chest / Press':['Z-Press','Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press','Converging Chest Press','Machine Incline Press','Lever Incline Press','Machine Shoulder Press','Lever Shoulder Press'],
  'Lateral Delt':['Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away Lateral Raise'],
  'Hinge / Hamstring':['Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Seated Hamstring Curl','Lying Hamstring Curl','Hamstring Curl','Glute-Ham Raise','Reverse Hyper'],
  'Dip / Triceps':['Weighted Dip','Close-Grip Bench','JM Press','Skull Crusher','Triceps Pushdown'],
@@ -187,7 +188,7 @@ state.progression=state.progression||[];
 state.entries=state.entries||{};
 state.techChoices=state.techChoices||{};
 state.accessories=state.accessories||{};
-state.bodyweights=state.bodyweights||{};state.completedWorkouts=state.completedWorkouts||{};
+state.bodyweights=state.bodyweights||{};state.completedWorkouts=state.completedWorkouts||{};state.expandedCompleted=state.expandedCompleted||{};state.accessoryLastWeights=state.accessoryLastWeights||{};state.backoffChains=state.backoffChains||{};
 let week=Number(state.currentWeek)||1, techPicker=null, accessoryPicker=null;
 
 const round5=x=>Math.round(x/5)*5;
@@ -227,7 +228,7 @@ function setWeek(w){
  state.currentWeek=week;
  localStorage.setItem(KEY,JSON.stringify(state));
  render();
- window.scrollTo({top:0,behavior:'smooth'});
+ requestAnimationFrame(()=>scrollToFirstIncomplete());
 }
 function changeWeek(delta){setWeek(week+delta)}
 function save(){const y=window.scrollY;state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}))}
@@ -256,7 +257,9 @@ function updateAccessorySet(di,i,j,k,v){
  // Keep the programmed rep target unless the user explicitly edits/deletes it.
  if(existing.reps===undefined)existing.reps=String(item.reps??'');
  rows[j]={...existing,[k]:v};item.loggedSets=rows;list[i]=item;
- state.accessories[`${week}-${di}`]=list;state.currentWeek=week;localStorage.setItem(KEY,JSON.stringify(state));
+ state.accessories[`${week}-${di}`]=list;state.currentWeek=week;
+ if(k==='weight'&&item.name&&v!==''){state.accessoryLastWeights[item.name]=v;}
+ localStorage.setItem(KEY,JSON.stringify(state));
 }
 function focusNextAccessory(di,i,j,k){
  const next=document.getElementById(`acc-${di}-${i}-${j+1}-${k}`);
@@ -300,10 +303,10 @@ function accessoryGuidance(a){return accessoryRoleDefaults(a.role||'Supplemental
 function accessoryHtml(a,di,i){
  const count=Math.max(1,Number(a.sets||3));
  const rows=Array.from({length:count},(_,j)=>{
-   const saved=a.loggedSets?.[j];
-   return saved?{...saved,reps:saved.reps===undefined?String(a.reps||''):saved.reps}:{weight:'',reps:String(a.reps||'')};
+   const saved=a.loggedSets?.[j], last=state.accessoryLastWeights[a.name]??'';
+   return saved?{...saved,reps:saved.reps===undefined?String(a.reps||''):saved.reps}:{weight:last,reps:String(a.reps||'')};
  });
- return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div></div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
+ return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div>${state.accessoryLastWeights[a.name]!==undefined?`<div class="lastWeight">Last weight: ${state.accessoryLastWeights[a.name]} lb</div>`:''}</div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
  <div style="margin-top:10px"><div class="label">Use this movement for</div><select onchange="accessoryRoleChange(${di},${i},this.value)"><option ${!a.role||a.role==='Supplemental'?'selected':''}>Supplemental</option><option ${a.role==='Technique'?'selected':''}>Technique</option><option ${a.role==='Tonnage'?'selected':''}>Tonnage</option><option ${a.role==='Hypertrophy'?'selected':''}>Hypertrophy</option></select><div class="small" style="margin-top:6px">${accessoryGuidance(a)}</div></div>
  <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
  <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input id="acc-${di}-${i}-${j}-weight" type="number" inputmode="decimal" enterkeyhint="next" value="${r.weight??''}" onblur="updateAccessorySet(${di},${i},${j},'weight',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'weight')"></div><div><div class="label">Reps</div><input id="acc-${di}-${i}-${j}-reps" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" value="${r.reps??''}" onblur="updateAccessorySet(${di},${i},${j},'reps',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'reps')"></div></div>`).join('')}</div>`;
@@ -321,7 +324,7 @@ function render(){
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
  const activeDays=week>=5?UNIT_DAYS:DAYS;document.getElementById('workouts').innerHTML=activeDays.map((d,i)=>workoutHtml(d,i,p)).join('');const unit=week>=5;document.getElementById('unitBadge').classList.toggle('show',unit);document.getElementById('headerEyebrow').textContent=unit?'STRONG AS FUDGE · UNIT BLOCK':'16-WEEK AUTOREGULATED STRENGTH SYSTEM';document.getElementById('headerSub').textContent=unit?'Be focused. Sling weight. Get strong. Get big. Keep the bulk on a leash.':'Heavy primary days. Programmed technique work with weak-point overrides.';renderBodyweight();
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
- document.getElementById('recent').innerHTML=recent.length?recent.map(e=>`<div class="log"><strong>W${e.week} ${e.lift}</strong><span class="small">${e.weight} × ${e.reps}${e.sets?` × ${e.sets}`:''} @ ${e.rpe}</span><span class="e1rm">${e.e1rm?`${Math.round(e.e1rm)} e1RM`:(e.kind||'Logged')}</span></div>`).join(''):'<div class="small">No sets logged yet.</div>';
+ document.getElementById('recent').innerHTML=recent.length?recent.map(e=>`<div class="log"><strong>W${e.week} ${e.lift}</strong><span class="small">${e.weight} × ${e.reps}${e.sets?` × ${e.sets}`:''} @ ${e.rpe}${e.backoffChains?' · ⛓ backoffs':''}</span><span class="e1rm">${e.e1rm?`${Math.round(e.e1rm)} e1RM`:(e.kind||'Logged')}</span></div>`).join(''):'<div class="small">No sets logged yet.</div>';
 }
 function recoveryHtml(di){
  const pk=phaseKey(week);
@@ -334,14 +337,24 @@ function recoveryHtml(di){
  if(['peak','taper'].includes(pk)){rec.cardio='10–20 min very easy walking only';rec.recovery='Peaking: recovery wins. Keep fatigue low and prioritize sleep/nutrition.'}
  return `<div class="recovery"><div class="recoveryTitle">Finish the day</div><div><strong>Cardio:</strong> ${rec.cardio}</div><div style="margin-top:5px"><strong>Recovery:</strong> ${rec.recovery}</div></div>`;
 }
+function workoutSummary(day,di){
+ const items=dayAccessories(di), loggedSets=items.reduce((n,a)=>n+(a.loggedSets||[]).filter(x=>x.weight!==''||x.reps!=='').length,0);
+ return `${items.length} auxiliaries · ${loggedSets} auxiliary sets logged`;
+}
+function toggleCompleted(di){const k=`${week}-${di}`;state.expandedCompleted[k]=!state.expandedCompleted[k];localStorage.setItem(KEY,JSON.stringify(state));const y=window.scrollY;render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}))}
+function scrollToFirstIncomplete(){const activeDays=week>=5?UNIT_DAYS:DAYS;const di=activeDays.findIndex((_,i)=>!state.completedWorkouts[`${week}-${i}`]);const el=document.getElementById(`workout-${di<0?0:di}`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})}
 function workoutHtml(day,di,p){
- if(day.type==='unit'||day.type==='unitPump'){const main=day.primary?primaryHtml(day.primary,di,p):'';const done=state.completedWorkouts[`${week}-${di}`];return `<section class="panel"><div class="row"><div><h2>${day.name}</h2><div class="small">${day.focus}</div></div><span class="purpose">${day.type==='unitPump'?'BUILD':'STRENGTH → TONNAGE → BUILD'}</span></div>${main}${accessoriesSection(di)}${recoveryHtmlUnit(di)}<button class="btn finishBtn ${done?'secondary':''}" onclick="finishWorkout(${di})">${done?'✓ WORKOUT LOGGED':'FINISH WORKOUT'}</button></section>`;}
- if(day.type==='primary') return `<section class="panel"><h2>${day.name}</h2>${day.lifts.map(l=>primaryHtml(l,di,p)).join('')}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
- if(day.type==='technique') return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No technique work during test week.</div>':techniqueHtml('Bench',di)+techniqueHtml('Squat',di)}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
- return `<section class="panel"><h2>${day.name}</h2>${week===16?'<div class="small">No secondary work during test week.</div>':techniqueHtml('OHP',di)+techniqueHtml('Deadlift',di)}${accessoriesSection(di)}${recoveryHtml(di)}</section>`;
+ const done=state.completedWorkouts[`${week}-${di}`], expanded=state.expandedCompleted[`${week}-${di}`];
+ if(done&&!expanded)return `<section id="workout-${di}" class="panel completedCard" onclick="toggleCompleted(${di})"><div class="row"><div><div class="doneMark">✓ ${day.name} — COMPLETE</div><div class="small" style="margin-top:4px">${workoutSummary(day,di)}</div></div><div class="expandHint">View Workout ▾</div></div></section>`;
+ let body='';
+ if(day.type==='unit'||day.type==='unitPump'){const main=day.primary?primaryHtml(day.primary,di,p):'';body=`<div class="row"><div><h2>${day.name}</h2><div class="small">${day.focus}</div></div><span class="purpose">${day.type==='unitPump'?'BUILD':'STRENGTH → TONNAGE → BUILD'}</span></div>${main}${accessoriesSection(di)}${recoveryHtmlUnit(di)}`;}
+ else if(day.type==='primary')body=`<h2>${day.name}</h2>${day.lifts.map(l=>primaryHtml(l,di,p)).join('')}${accessoriesSection(di)}${recoveryHtml(di)}`;
+ else if(day.type==='technique')body=`<h2>${day.name}</h2>${week===16?'<div class="small">No technique work during test week.</div>':techniqueHtml('Bench',di)+techniqueHtml('Squat',di)}${accessoriesSection(di)}${recoveryHtml(di)}`;
+ else body=`<h2>${day.name}</h2>${week===16?'<div class="small">No secondary work during test week.</div>':techniqueHtml('OHP',di)+techniqueHtml('Deadlift',di)}${accessoriesSection(di)}${recoveryHtml(di)}`;
+ return `<section id="workout-${di}" class="panel">${body}<button class="btn finishBtn ${done?'secondary':''}" onclick="finishWorkout(${di})">${done?'✓ WORKOUT LOGGED · COLLAPSE':'FINISH WORKOUT'}</button></section>`;
 }
 function recoveryHtmlUnit(di){const rec=[['10–20 min easy walk or bike','Leg day: eat, hydrate, recover.'],['15–25 min Zone 2 optional','Keep it easy enough for tomorrow’s back work.'],['10–20 min easy walk','Skip hard intervals after heavy pulls.'],['15–25 min Zone 2 optional','Save the violence for the weights.'],['20–30 min Zone 2 or easy incline walk','Leave feeling better than you arrived.']][di]||['15–20 min easy','Recover.'];return `<div class="recovery"><div class="recoveryTitle">Finish the day</div><div><strong>Conditioning:</strong> ${rec[0]}</div><div style="margin-top:5px"><strong>Recovery:</strong> ${rec[1]}</div></div>`;}
-function finishWorkout(di){state.completedWorkouts[`${week}-${di}`]=new Date().toISOString();localStorage.setItem(KEY,JSON.stringify(state));celebrate('workout');const y=window.scrollY;setTimeout(()=>{render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}))},900)}
+function finishWorkout(di){const k=`${week}-${di}`;if(state.completedWorkouts[k]){state.expandedCompleted[k]=false;localStorage.setItem(KEY,JSON.stringify(state));render();requestAnimationFrame(()=>scrollToFirstIncomplete());return}state.completedWorkouts[k]=new Date().toISOString();state.expandedCompleted[k]=false;localStorage.setItem(KEY,JSON.stringify(state));celebrate('workout');setTimeout(()=>{render();requestAnimationFrame(()=>scrollToFirstIncomplete())},900)}
 function saveBodyweight(){const v=Number(document.getElementById('bodyweightInput').value);if(!v)return;state.bodyweights[week]=v;localStorage.setItem(KEY,JSON.stringify(state));renderBodyweight();celebrate('bodyweight')}
 function renderBodyweight(){const el=document.getElementById('bodyweightInput'),trend=document.getElementById('bwTrend');if(!el||!trend)return;el.value=state.bodyweights[week]||'';const cur=Number(state.bodyweights[week]||0),prev=Number(state.bodyweights[week-1]||0);if(!cur||!prev){trend.textContent='No trend yet';return}const d=cur-prev;trend.textContent=`${d>0?'+':''}${d.toFixed(1)} lb vs last week`;}
 function primaryHtml(l,di,p){
@@ -362,8 +375,10 @@ function primaryHtml(l,di,p){
   <div><div class="label">Actual RPE</div><input id="${id}-p" type="number" inputmode="decimal" step=".5" value="${e.rpe||''}" placeholder="8"></div>
  </div></div>
  <div id="${id}-back" class="small">Backoffs recalc from your actual top weight when entered.</div>
+ <label class="chainToggle"><input type="checkbox" ${state.backoffChains[id]?'checked':''} onchange="setBackoffChains('${id}',this.checked)"><span>⛓ Use chains for backoff sets</span></label>
  <button class="btn" style="width:100%;margin-top:10px" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button></div>`;
 }
+function setBackoffChains(id,on){state.backoffChains[id]=!!on;localStorage.setItem(KEY,JSON.stringify(state))}
 function updateBackoffPreview(id,pct,reps,sets){
  const w=Number(document.getElementById(id+'-w')?.value||0);
  const el=document.getElementById(id+'-back');
@@ -394,7 +409,7 @@ function logPrimary(id,lift,di,dr){
  const r=Number(document.getElementById(id+'-r').value);
  const rpe=Number(document.getElementById(id+'-p').value)||8;
  const prescribedWeight=suggested(lift,week), prescribedReps=dr;
- state.entries[id]={week,day:di,lift,weight:w,reps:r,rpe,e1rm:w*(1+r/30),date:new Date().toISOString(),kind:'Primary',prescribedWeight,prescribedReps};
+ state.entries[id]={week,day:di,lift,weight:w,reps:r,rpe,e1rm:w*(1+r/30),date:new Date().toISOString(),kind:'Primary',prescribedWeight,prescribedReps,backoffChains:!!state.backoffChains[id]};
  if(!state.progression)state.progression=[];
  if(r<prescribedReps){
    state.progression.push({week,lift,result:'Hold',reason:`Completed ${r}/${prescribedReps} prescribed reps`,nextRecommendation:`Repeat ${w} lb next exposure`});
@@ -445,7 +460,7 @@ async function exportExcel(){
   ...LIFTS.map(l=>{const vals=main.filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);return [l,state.maxes[KEYS[l]],vals.length?Math.round(Math.max(...vals)):null]})
  ];
  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(summary),'Summary');
- const mainRows=main.map(e=>({Week:e.week,Day:e.day+1,Lift:e.lift,'Prescribed Weight':e.prescribedWeight,'Actual Weight':e.weight,'Prescribed Reps':e.prescribedReps,'Actual Reps':e.reps,RPE:e.rpe,e1RM:Math.round(e.e1rm||0),Date:e.date}));
+ const mainRows=main.map(e=>({Week:e.week,Day:e.day+1,Lift:e.lift,'Prescribed Weight':e.prescribedWeight,'Actual Weight':e.weight,'Prescribed Reps':e.prescribedReps,'Actual Reps':e.reps,'Backoff Chains':e.backoffChains?'Yes':'No',RPE:e.rpe,e1RM:Math.round(e.e1rm||0),Date:e.date}));
  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(mainRows.length?mainRows:[{Note:'No main-lift data yet'}]),'Main Lifts');
  const techRows=tech.map(e=>({Week:e.week,Day:e.day+1,Variation:e.lift,'Parent Lift':e.parentLift||'','Prescribed Weight':e.prescribedWeight,'Actual Weight':e.weight,'Prescribed Sets':e.prescribedSets,'Actual Sets':e.sets,'Prescribed Reps':e.prescribedReps,'Actual Reps':e.reps,RPE:e.rpe,Target:e.kind}));
  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(techRows.length?techRows:[{Note:'No technique data yet'}]),'Technique Work');
