@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v11 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v12 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -207,7 +207,7 @@ function baseSuggested(l,w){
 }
 function priorPrimary(l,w){
  if(w<=1)return null;
- const candidates=Object.values(state.entries).filter(e=>e.kind==='Primary'&&e.lift===l&&e.week===w-1);
+ const candidates=Object.values(state.entries||{}).filter(e=>e&&typeof e==='object'&&e.kind==='Primary'&&e.lift===l&&Number(e.week)===w-1);
  return candidates.sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
 }
 function suggestedInfo(l,w){
@@ -242,8 +242,9 @@ function getTechPrescription(lift){
 }
 
 function dayAccessories(di){
- const k=`${week}-${di}`;
- if(state.accessories[k])return state.accessories[k];
+ const k=`${week}-${di}`, saved=state.accessories?.[k];
+ // v12: tolerate stale/malformed accessory data from earlier app versions.
+ if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
  if(week>=5)return (UNIT_ACC[di]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
  return (DEFAULT_ACC[di]||[]).map(name=>({name,category:EXCAT[name]||'General',sets:'3',reps:(name==='Face Pull'||name==='Lateral Raise')?'15':'8',loggedSets:[]}));
 }
@@ -322,10 +323,19 @@ function render(){
  document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button data-week="${w}" class="pill ${w===week?'active':''}" onclick="setWeek(${w})">${w}</button>`).join('');
  requestAnimationFrame(()=>{const active=document.querySelector('.pill.active'),strip=document.getElementById('weeks');if(active&&strip){strip.scrollLeft=active.offsetLeft-(strip.clientWidth-active.clientWidth)/2}});
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
- const activeDays=week>=5?UNIT_DAYS:DAYS;document.getElementById('workouts').innerHTML=activeDays.map((d,i)=>workoutHtml(d,i,p)).join('');const unit=week>=5;document.getElementById('unitBadge').classList.toggle('show',unit);document.getElementById('headerEyebrow').textContent=unit?'STRONG AS FUDGE · UNIT BLOCK':'16-WEEK AUTOREGULATED STRENGTH SYSTEM';document.getElementById('headerSub').textContent=unit?'Be focused. Sling weight. Get strong. Get big. Keep the bulk on a leash.':'Heavy primary days. Programmed technique work with weak-point overrides.';renderBodyweight();
+ const activeDays=week>=5?UNIT_DAYS:DAYS;document.getElementById('workouts').innerHTML=activeDays.map((d,i)=>{try{return workoutHtml(d,i,p)}catch(err){console.error('Workout render failed',week,i,err);return `<section id="workout-${i}" class="panel"><h2>${d?.name||`Day ${i+1}`}</h2><div class="small">This workout had incompatible saved data. Tap Repair to restore this day's programmed exercises without affecting your other training logs.</div><button class="btn secondary" style="width:100%;margin-top:12px" onclick="repairWorkout(${i})">Repair Workout</button></section>`}}).join('');const unit=week>=5;document.getElementById('unitBadge').classList.toggle('show',unit);document.getElementById('headerEyebrow').textContent=unit?'STRONG AS FUDGE · UNIT BLOCK':'16-WEEK AUTOREGULATED STRENGTH SYSTEM';document.getElementById('headerSub').textContent=unit?'Be focused. Sling weight. Get strong. Get big. Keep the bulk on a leash.':'Heavy primary days. Programmed technique work with weak-point overrides.';renderBodyweight();
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
  document.getElementById('recent').innerHTML=recent.length?recent.map(e=>`<div class="log"><strong>W${e.week} ${e.lift}</strong><span class="small">${e.weight} × ${e.reps}${e.sets?` × ${e.sets}`:''} @ ${e.rpe}${e.backoffChains?' · ⛓ backoffs':''}</span><span class="e1rm">${e.e1rm?`${Math.round(e.e1rm)} e1RM`:(e.kind||'Logged')}</span></div>`).join(''):'<div class="small">No sets logged yet.</div>';
 }
+
+function repairWorkout(di){
+ const k=`${week}-${di}`;
+ delete state.accessories[k];
+ delete state.expandedCompleted[k];
+ localStorage.setItem(KEY,JSON.stringify(state));
+ render();
+}
+
 function recoveryHtml(di){
  const pk=phaseKey(week);
  const rec=[
