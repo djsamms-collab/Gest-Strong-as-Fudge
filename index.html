@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v12 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v13 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -95,11 +95,11 @@ const UNIT_DAYS=[
 ];
 const UNIT_ACC={
 0:[['Pendulum Squat','Tonnage',4,8],['Safety-Bar Bulgarian Split Squat','Hypertrophy',3,8],['Leg Press','Hypertrophy',3,12],['Seated Hamstring Curl','Hypertrophy',3,12],['Hip Thrust','Tonnage',3,8],['Standing Calf Raise','Hypertrophy',4,12]],
-1:[['Lever Chest Press','Tonnage',4,8],['Machine Incline Press','Hypertrophy',3,10],['Cable Lateral Raise','Hypertrophy',4,15],['Triceps Pushdown','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',3,10]],
-2:[['Lever Row','Tonnage',4,8],['Neutral-Grip Pulldown','Hypertrophy',4,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',4,15],['Safety-Bar Good Morning','Technique',3,6],['Hammer Curl','Hypertrophy',3,10]],
-3:[['Lever Shoulder Press','Tonnage',4,8],['Machine Lateral Raise','Hypertrophy',4,15],['Rear-Delt Row','Hypertrophy',3,12],['Face Pull','Supplemental',3,15],['Machine Preacher Curl','Hypertrophy',3,10],['Triceps Pushdown','Hypertrophy',3,12]],
-4:[['Machine Preacher Curl','Hypertrophy',4,10],['Triceps Pushdown','Hypertrophy',4,12],['Machine Lateral Raise','Hypertrophy',4,15],['Lever Chest Press','Hypertrophy',3,12],['Lever Row','Hypertrophy',3,12],['Leg-Press Calf Raise','Hypertrophy',3,15]]};
-const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8],name:'Unit Deload',desc:'Cut machine volume roughly in half and keep the big lifts fast.',primary:{reps:5,sets:2,backReps:5,pct:.70,deload:true}},{weeks:[9,10,11],name:'Be a Fuckin Unit — Strength',desc:'Heavier barbell work with enough machine volume to keep growing.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
+1:[['Lever Chest Press','Tonnage',4,8],['Machine Incline Press','Hypertrophy',3,10],['Cable Lateral Raise','Hypertrophy',5,15],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Triceps Pushdown','Hypertrophy',4,12],['Machine Preacher Curl','Hypertrophy',4,10]],
+2:[['Lever Row','Tonnage',5,8],['Neutral-Grip Pulldown','Hypertrophy',5,10],['Chest-Supported Row','Hypertrophy',4,10],['Reverse Pec Deck','Hypertrophy',5,15],['Safety-Bar Good Morning','Technique',3,6],['Hammer Curl','Hypertrophy',4,10]],
+3:[['Lever Shoulder Press','Tonnage',4,8],['Machine Lateral Raise','Hypertrophy',5,15],['Rear-Delt Row','Hypertrophy',4,12],['Face Pull','Supplemental',3,15],['Lever Row','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',4,10],['Triceps Pushdown','Hypertrophy',4,12]],
+4:[['Machine Preacher Curl','Hypertrophy',5,10],['Triceps Pushdown','Hypertrophy',5,12],['Machine Lateral Raise','Hypertrophy',5,15],['Reverse Pec Deck','Hypertrophy',3,15],['Lever Chest Press','Hypertrophy',3,12],['Lever Row','Hypertrophy',4,12],['Leg-Press Calf Raise','Hypertrophy',3,15]]};
+const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8,9,10,11],name:'Be a Fuckin Unit — Strength',desc:'No Week 8 deload: press into heavier barbell work with extra shoulder, back, and arm volume while recovery is good.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
 
 const TECHNIQUE_LIBRARY={
  Squat:[
@@ -193,7 +193,7 @@ let week=Number(state.currentWeek)||1, techPicker=null, accessoryPicker=null;
 
 const round5=x=>Math.round(x/5)*5;
 const phaseFor=w=>PHASES.find(p=>p.weeks.includes(w));
-const phaseKey=w=>[4,8,12].includes(w)?'deload':w<=3?'base':w<=7?'strength':w<=11?'max':'peak';
+const phaseKey=w=>[4,12].includes(w)?'deload':w<=3?'base':w<=7?'strength':w<=11?'max':'peak';
 const mainId=(w,d,l)=>`${w}-${d}-${KEYS[l]}`;
 function baseSuggested(l,w){
  const m=state.maxes[KEYS[l]];
