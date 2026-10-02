@@ -89,7 +89,7 @@ const DAYS=[
 const UNIT_DAYS=[
  {name:'Day 1 — LEGS',type:'unit',primary:'Squat',focus:'Strength + quad/glute tonnage'},
  {name:'Day 2 — CHEST',type:'unit',primary:'Bench',focus:'Strength + pec/triceps size'},
- {name:'Day 3 — BACK',type:'unit',primary:'Deadlift',focus:'Strength + back thickness/width'},
+ {name:'Day 3 — DEADLIFT + LEGS / BACK',type:'unit',primary:'Deadlift',focus:'Second leg day: heavy pull + squat pattern + hamstrings + back'},
  {name:'Day 4 — SHOULDERS',type:'unit',primary:'OHP',focus:'Strength + delts/traps'},
  {name:'Day 5 — DICK DAY',type:'unitPump',focus:'Arms + delts + upper-body pump. Leave looking structurally wider.'}
 ];
@@ -99,7 +99,7 @@ const UNIT_ACC={
 2:[['Lever Row','Tonnage',5,8],['Neutral-Grip Pulldown','Hypertrophy',5,10],['Chest-Supported Row','Hypertrophy',4,10],['Reverse Pec Deck','Hypertrophy',5,15],['Safety-Bar Good Morning','Technique',3,6],['Hammer Curl','Hypertrophy',4,10]],
 3:[['Lever Shoulder Press','Tonnage',4,8],['Machine Lateral Raise','Hypertrophy',5,15],['Rear-Delt Row','Hypertrophy',4,12],['Face Pull','Supplemental',3,15],['Lever Row','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',4,10],['Triceps Pushdown','Hypertrophy',4,12]],
 4:[['Machine Preacher Curl','Hypertrophy',5,10],['Triceps Pushdown','Hypertrophy',5,12],['Machine Lateral Raise','Hypertrophy',5,15],['Reverse Pec Deck','Hypertrophy',3,15],['Lever Chest Press','Hypertrophy',3,12],['Lever Row','Hypertrophy',4,12],['Leg-Press Calf Raise','Hypertrophy',3,15]]};
-const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8,9,10,11],name:'Be a Fuckin Unit — Strength',desc:'No Week 8 deload: press into heavier barbell work with extra shoulder, back, and arm volume while recovery is good.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
+const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8,9,10,11],name:'Be a Fuckin Unit — Strength',desc:'No Week 8 deload. Two leg days, back work every session, and heavier barbell work. Missed reps hold the load; repeated misses trigger a small reset. Skipped lifts carry forward.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
 
 const TECHNIQUE_LIBRARY={
  Squat:[
@@ -159,7 +159,7 @@ const DEFAULT_TECH={
 
 
 const ACCESSORY_GROUPS={
- 'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','Safety-Bar Good Morning','Safety-Bar Bulgarian Split Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
+ 'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','Zercher Squat','Safety-Bar Good Morning','Safety-Bar Bulgarian Split Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
  'Vertical Pull':['Weighted Pull-Up','Pull-Up','Chin-Up','Lat Pulldown','Neutral-Grip Pulldown'],
  'Core':['Ab Wheel','Hanging Leg Raise','Cable Crunch','Dead Bug','Plank','Pallof Press'],
  'Bench / Triceps':['Close-Grip Bench','Spoto Press','Floor Press','JM Press','Weighted Dip','Triceps Pushdown'],
@@ -167,7 +167,7 @@ const ACCESSORY_GROUPS={
  'Rear Delt / Scapular':['Face Pull','Reverse Pec Deck','Band Pull-Apart','Rear-Delt Row'],
  'Upper Chest / Press':['Z-Press','Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press','Converging Chest Press','Machine Incline Press','Lever Incline Press','Machine Shoulder Press','Lever Shoulder Press'],
  'Lateral Delt':['Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away Lateral Raise'],
- 'Hinge / Hamstring':['Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Seated Hamstring Curl','Lying Hamstring Curl','Hamstring Curl','Glute-Ham Raise','Reverse Hyper'],
+ 'Hinge / Hamstring':['Belt Squat March','Romanian Deadlift','Good Morning','Stiff-Leg Deadlift','45° Back Extension','Seated Hamstring Curl','Lying Hamstring Curl','Hamstring Curl','Glute-Ham Raise','Reverse Hyper'],
  'Dip / Triceps':['Weighted Dip','Close-Grip Bench','JM Press','Skull Crusher','Triceps Pushdown'],
  'Glute / Hip':['Hip Thrust','Glute Bridge','Cable Pull-Through','Hip Abduction Machine','Hip Adduction Machine'],
  'Calves':['Standing Calf Raise','Seated Calf Raise','Leg-Press Calf Raise'],
@@ -200,27 +200,38 @@ function baseSuggested(l,w){
  if(w<=3)return round5(m*[.80,.82,.84][w-1]);
  if(w===4)return round5(m*.68);
  if(w<=7)return round5(m*[.80,.825,.85][w-5]);
- if(w===8)return round5(m*.68);
- if(w<=11)return round5(m*[.85,.875,.90][w-9]);
+ if(w<=11)return round5(m*[.85,.875,.90,.925][w-8]);
  if(w===12)return round5(m*.70);
  if(w===13)return round5(m*.90);if(w===14)return round5(m*.925);if(w===15)return round5(m*.95);return round5(m*1.00);
 }
-function priorPrimary(l,w){
- if(w<=1)return null;
- const candidates=Object.values(state.entries||{}).filter(e=>e&&typeof e==='object'&&e.kind==='Primary'&&e.lift===l&&Number(e.week)===w-1);
+function liftResultForWeek(l,w){
+ const candidates=Object.values(state.entries||{}).filter(e=>e&&typeof e==='object'&&e.lift===l&&Number(e.week)===w&&(e.kind==='Primary'||e.kind==='Skipped'));
  return candidates.sort((a,b)=>new Date(b.date)-new Date(a.date))[0]||null;
 }
 function suggestedInfo(l,w){
- const scheduled=baseSuggested(l,w), prev=priorPrimary(l,w);
- if(!prev)return {weight:scheduled,note:'Programmed progression'};
- const target=Number(prev.prescribedReps||prev.reps||1), actual=Number(prev.reps||0), rpe=Number(prev.rpe||0);
- if(actual<target){
-   return {weight:Number(prev.weight),note:`Held at ${prev.weight} lb: last week was ${actual}/${target} reps`};
+ const scheduled=baseSuggested(l,w);
+ if(w<=1)return {weight:scheduled,note:'Programmed progression'};
+ let consecutiveSkips=0, consecutiveMisses=0, lastWeight=null, lastTarget=null;
+ for(let pw=w-1;pw>=1;pw--){
+   const e=liftResultForWeek(l,pw);
+   if(!e)break;
+   if(e.kind==='Skipped'){
+     consecutiveSkips++;
+     if(e.prescribedWeight)lastWeight=Number(e.prescribedWeight);
+     continue;
+   }
+   const target=Number(e.prescribedReps||e.reps||1), actual=Number(e.reps||0);
+   lastWeight=Number(e.weight||e.prescribedWeight||scheduled); lastTarget=target;
+   if(actual<target){consecutiveMisses++;continue;}
+   break;
  }
- if(rpe>=9.5){
-   return {weight:Number(prev.weight),note:`Held at ${prev.weight} lb: last week reached RPE ${rpe}`};
- }
- return {weight:scheduled,note:'Target achieved last week — programmed progression continues'};
+ if(consecutiveSkips>=3){const wt=round5(Math.max(0,(lastWeight||scheduled)-10));return {weight:wt,note:`Reset ${wt} lb: ${consecutiveSkips} straight skipped weeks (10 lb reduction)`};}
+ if(consecutiveSkips>0){const wt=lastWeight||baseSuggested(l,w-consecutiveSkips);return {weight:wt,note:`Carry-forward ${wt} lb: ${consecutiveSkips} skipped week${consecutiveSkips>1?'s':''}`};}
+ if(consecutiveMisses>=2){const wt=round5((lastWeight||scheduled)*.95);return {weight:wt,note:`Reset ${wt} lb: missed prescribed reps 2 exposures in a row (~5% reduction)`};}
+ if(consecutiveMisses===1){return {weight:lastWeight||scheduled,note:`Hold ${lastWeight||scheduled} lb: prescribed reps were missed last exposure`};}
+ const prev=liftResultForWeek(l,w-1);
+ if(prev&&prev.kind==='Primary'&&Number(prev.rpe||0)>=9.5)return {weight:Number(prev.weight),note:`Held at ${prev.weight} lb: last exposure reached RPE ${prev.rpe}`};
+ return {weight:scheduled,note:'Target achieved — programmed progression continues'};
 }
 function suggested(l,w){return suggestedInfo(l,w).weight}
 function setWeek(w){
@@ -245,7 +256,20 @@ function dayAccessories(di){
  const k=`${week}-${di}`, saved=state.accessories?.[k];
  // v12: tolerate stale/malformed accessory data from earlier app versions.
  if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
- if(week>=5)return (UNIT_ACC[di]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
+ if(week>=5){
+   let src=(UNIT_ACC[di]||[]).map(x=>[...x]);
+   if(week>=8){
+     if(di===0)src.push(['Chest-Supported Row','Hypertrophy',3,10]);
+     if(di===2){
+       const squatPattern=(week%2===0)?'Safety-Bar Squat':'Zercher Squat';
+       src=[
+        [squatPattern,'Tonnage',3,6],['Seated Hamstring Curl','Hypertrophy',4,10],['Reverse Hyper','Supplemental',3,12],['Belt Squat March','Supplemental',3,20],
+        ['Lever Row','Tonnage',4,8],['Neutral-Grip Pulldown','Hypertrophy',4,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',4,15],['Hammer Curl','Hypertrophy',4,10]
+       ];
+     }
+   }
+   return src.map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
+ }
  return (DEFAULT_ACC[di]||[]).map(name=>({name,category:EXCAT[name]||'General',sets:'3',reps:(name==='Face Pull'||name==='Lateral Raise')?'15':'8',loggedSets:[]}));
 }
 function setDayAccessories(di,list){state.accessories[`${week}-${di}`]=list;save()}
@@ -301,13 +325,34 @@ function accessoryRoleChange(di,i,v){
  item.role=v; item.sets=String(d.sets); item.reps=String(d.reps); item.loggedSets=[]; list[i]=item; setDayAccessories(di,list);
 }
 function accessoryGuidance(a){return accessoryRoleDefaults(a.role||'Supplemental').note}
+// v15: derive the most recent logged auxiliary weight from workout history, not only
+// the accessoryLastWeights cache. This makes "Last weight" reliable for every
+// programmed auxiliary, including the first movement after the main lift.
+function previousAccessoryWeight(name,di){
+ if(!name)return '';
+ let best=null;
+ Object.entries(state.accessories||{}).forEach(([key,items])=>{
+   const parts=key.split('-'), w=Number(parts[0]), d=Number(parts[1]);
+   if(!Number.isFinite(w)||!Number.isFinite(d)||w>week||(w===week&&d>=di)||!Array.isArray(items))return;
+   items.forEach(item=>{
+     if(!item||item.name!==name||!Array.isArray(item.loggedSets))return;
+     item.loggedSets.forEach((set,si)=>{
+       if(set?.weight===undefined||set.weight===null||set.weight==='')return;
+       const candidate={w,d,si,weight:set.weight};
+       if(!best||w>best.w||(w===best.w&&d>best.d)||(w===best.w&&d===best.d&&si>best.si))best=candidate;
+     });
+   });
+ });
+ return best?best.weight:(state.accessoryLastWeights?.[name]??'');
+}
 function accessoryHtml(a,di,i){
  const count=Math.max(1,Number(a.sets||3));
+ const last=previousAccessoryWeight(a.name,di);
  const rows=Array.from({length:count},(_,j)=>{
-   const saved=a.loggedSets?.[j], last=state.accessoryLastWeights[a.name]??'';
+   const saved=a.loggedSets?.[j];
    return saved?{...saved,reps:saved.reps===undefined?String(a.reps||''):saved.reps}:{weight:last,reps:String(a.reps||'')};
  });
- return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div>${state.accessoryLastWeights[a.name]!==undefined?`<div class="lastWeight">Last weight: ${state.accessoryLastWeights[a.name]} lb</div>`:''}</div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
+ return `<div class="accessorybox"><div class="row"><div onclick="openAccessoryPicker(${di},${i})"><div class="liftname" style="font-size:16px">${a.name||'Select auxiliary'}</div><div class="small">${a.category||EXCAT[a.name]||'General'} · tap to swap</div>${last!==''?`<div class="lastWeight">Previous weight: ${last} lb</div>`:''}</div><button class="btn danger smallbtn" onclick="removeAccessory(${di},${i})">Delete</button></div>
  <div style="margin-top:10px"><div class="label">Use this movement for</div><select onchange="accessoryRoleChange(${di},${i},this.value)"><option ${!a.role||a.role==='Supplemental'?'selected':''}>Supplemental</option><option ${a.role==='Technique'?'selected':''}>Technique</option><option ${a.role==='Tonnage'?'selected':''}>Tonnage</option><option ${a.role==='Hypertrophy'?'selected':''}>Hypertrophy</option></select><div class="small" style="margin-top:6px">${accessoryGuidance(a)}</div></div>
  <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
  <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input id="acc-${di}-${i}-${j}-weight" type="number" inputmode="decimal" enterkeyhint="next" value="${r.weight??''}" onblur="updateAccessorySet(${di},${i},${j},'weight',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'weight')"></div><div><div class="label">Reps</div><input id="acc-${di}-${i}-${j}-reps" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" value="${r.reps??''}" onblur="updateAccessorySet(${di},${i},${j},'reps',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'reps')"></div></div>`).join('')}</div>`;
@@ -386,7 +431,7 @@ function primaryHtml(l,di,p){
  </div></div>
  <div id="${id}-back" class="small">Backoffs recalc from your actual top weight when entered.</div>
  <label class="chainToggle"><input type="checkbox" ${state.backoffChains[id]?'checked':''} onchange="setBackoffChains('${id}',this.checked)"><span>⛓ Use chains for backoff sets</span></label>
- <button class="btn" style="width:100%;margin-top:10px" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button></div>`;
+ <button class="btn" style="width:100%;margin-top:10px" onclick="logPrimary('${id}','${l}',${di},${p.primary.reps})">Log Top Set</button><button class="btn secondary" style="width:100%;margin-top:8px" onclick="skipPrimary('${id}','${l}',${di},${p.primary.reps})">Skipped This Lift</button></div>`;
 }
 function setBackoffChains(id,on){state.backoffChains[id]=!!on;localStorage.setItem(KEY,JSON.stringify(state))}
 function updateBackoffPreview(id,pct,reps,sets){
@@ -414,6 +459,13 @@ function openTechPicker(lift){
 function selectTech(lift,id){state.techChoices[`${week}-${lift}`]=id;closeModal('techModal');save()}
 function celebrate(type='set'){const unit=week>=5,banks=unit?{set:['SLUNG.','WORK.','DENSE.','MOVED.','LOCKED IN.'],primary:['BIG WEIGHT.','STRUCTURAL LOAD.','THE BAR HAS BEEN INFORMED.','STRONG AS FUDGE.'],workout:['WORK HAS OCCURRED.','GO EAT PROTEIN.','ABSOLUTE FUCKIN UNIT.','MISSION ACCOMPLISHED.'],bodyweight:['DATA, NOT DRAMA.','BULK: SUPERVISED.','KEEP IT TIGHT.']}:{set:['SLAY','BEAST','DAWG','ANIMAL'],primary:['STRONG.','MOVED.'],workout:['DONE.'],bodyweight:['LOGGED.']};const words=banks[type]||banks.set,word=words[Math.floor(Math.random()*words.length)],box=document.getElementById('celebrate'),el=document.getElementById('celebrateWord');el.textContent=word;box.classList.remove('show');void box.offsetWidth;box.classList.add('show');setTimeout(()=>box.classList.remove('show'),900);}
 function maybeLoginSplash(){if(sessionStorage.getItem('GSAF_SPLASH'))return;sessionStorage.setItem('GSAF_SPLASH','1');const msgs=week>=5?['LOCK IN.<span>BE FOCUSED. SLING WEIGHT.</span>','TODAY WE BECOME DENSER.<span>STRONG AS FUDGE</span>','BUILD THE UNIT.<span>MOVE WITH PURPOSE.</span>','NO SIDE QUESTS.<span>DO THE WORK.</span>']:['STRONG AS FUDGE.<span>SHOW UP. DO THE WORK.</span>'];const box=document.getElementById('loginSplash'),el=document.getElementById('loginSplashText');el.innerHTML=msgs[Math.floor(Math.random()*msgs.length)];box.classList.add('show');setTimeout(()=>box.classList.remove('show'),1700)}
+function skipPrimary(id,lift,di,dr){
+ const prescribedWeight=suggested(lift,week);
+ state.entries[id]={week,day:di,lift,weight:null,reps:0,rpe:null,e1rm:null,date:new Date().toISOString(),kind:'Skipped',prescribedWeight,prescribedReps:dr};
+ state.progression.push({week,lift,result:'Skipped',reason:'Lift skipped',nextRecommendation:'Carry this exposure forward; after 3 straight skipped weeks reduce 10 lb'});
+ localStorage.setItem(KEY,JSON.stringify(state));
+ const y=window.scrollY;render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}));
+}
 function logPrimary(id,lift,di,dr){
  const w=Number(document.getElementById(id+'-w').value)||suggested(lift,week);
  const r=Number(document.getElementById(id+'-r').value);
