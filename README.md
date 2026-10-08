@@ -1,15 +1,3 @@
-# Get Strong As Fudge PWA v15
+Get Strong As Fudge v17
 
-Programming update from Week 8 onward:
-- Two leg days: squat day plus deadlift/posterior-chain leg day.
-- Deadlift day adds alternating Safety-Bar Squat / Zercher Squat, hamstring curls, belt-squat marches, and reverse hypers.
-- Direct back work is included on every training day.
-- Week 8 is a full strength week (no deload) and progresses through Weeks 8–11.
-- Missed-rep logic: one miss holds the load; two consecutive missed exposures trigger an approximately 5% reset on the third exposure.
-- Skipped-lift logic: carry the prior exposure forward; after three consecutive skipped weeks, reduce 10 lb.
-- Existing local storage key is unchanged to preserve training history.
-
-
-## v15 change
-- Every auxiliary now shows and prefills the most recent previously logged weight for that same movement, including the first auxiliary after the main lift.
-- Previous weight is derived from workout history with the old last-weight cache as a fallback. Existing training data is preserved.
+Week 8 days 1–2 retain the v15 plan. Week 8 days 3–5 use the new split. Weeks 9–16 use the full v16 split. Existing local training data is not cleared or reindexed. Week 8 day 3 legacy accessory data is archived under v17ArchivedWeek8Day3 if present; primary lift entries are retained. Export your data before updating.

@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v13 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v17 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -87,18 +87,35 @@ const DAYS=[
 
 ];
 const UNIT_DAYS=[
+ {name:'Day 1 — LEGS / SQUAT',type:'unit',primary:'Squat',focus:'Squat strength + controlled quad volume'},
+ {name:'Day 2 — CHEST / BENCH',type:'unit',primary:'Bench',focus:'Bench strength + pecs, triceps and horizontal pulling'},
+ {name:'Day 3 — BACK',type:'unitPump',focus:'Dedicated back: vertical pulling, horizontal rowing, upper back and biceps'},
+ {name:'Day 4 — SHOULDERS / OHP',type:'unit',primary:'OHP',focus:'Press strength + lateral/rear delts and balanced pulling'},
+ {name:'Day 5 — LEGS / DEADLIFT',type:'unit',primary:'Deadlift',focus:'Posterior chain: deadlift, specialty squat, hamstrings, hip flexors and reverse hypers'}
+];
+// Weekly horizontal + vertical pull working sets approximately match pressing sets.
+// Isolation rear-delt/face-pull sets do not count as compound pulling sets.
+const UNIT_ACC={
+ 0:[['Pendulum Squat','Tonnage',3,8],['Safety-Bar Bulgarian Split Squat','Hypertrophy',2,8],['Seated Hamstring Curl','Hypertrophy',3,12],['Chest-Supported Row','Hypertrophy',3,10],['Standing Calf Raise','Hypertrophy',3,12]],
+ 1:[['Lever Chest Press','Tonnage',3,8],['Machine Incline Press','Hypertrophy',2,10],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Cable Lateral Raise','Hypertrophy',3,15],['Triceps Pushdown','Hypertrophy',3,12]],
+ 2:[['Lever Row','Tonnage',4,8],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',3,15],['Hammer Curl','Hypertrophy',3,10],['Machine Preacher Curl','Hypertrophy',2,10]],
+ 3:[['Lever Shoulder Press','Tonnage',2,8],['Machine Lateral Raise','Hypertrophy',4,15],['Rear-Delt Row','Hypertrophy',3,12],['Lever Row','Hypertrophy',3,12],['Triceps Pushdown','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',2,10]],
+ 4:[['Safety-Bar Squat','Tonnage',3,6],['Seated Hamstring Curl','Hypertrophy',4,10],['Reverse Hyper','Supplemental',3,12],['Belt Squat March','Supplemental',3,20],['45° Back Extension','Supplemental',2,12]]
+};
+const LEGACY_UNIT_DAYS=[
  {name:'Day 1 — LEGS',type:'unit',primary:'Squat',focus:'Strength + quad/glute tonnage'},
  {name:'Day 2 — CHEST',type:'unit',primary:'Bench',focus:'Strength + pec/triceps size'},
  {name:'Day 3 — DEADLIFT + LEGS / BACK',type:'unit',primary:'Deadlift',focus:'Second leg day: heavy pull + squat pattern + hamstrings + back'},
  {name:'Day 4 — SHOULDERS',type:'unit',primary:'OHP',focus:'Strength + delts/traps'},
  {name:'Day 5 — DICK DAY',type:'unitPump',focus:'Arms + delts + upper-body pump. Leave looking structurally wider.'}
 ];
-const UNIT_ACC={
+const LEGACY_UNIT_ACC={
 0:[['Pendulum Squat','Tonnage',4,8],['Safety-Bar Bulgarian Split Squat','Hypertrophy',3,8],['Leg Press','Hypertrophy',3,12],['Seated Hamstring Curl','Hypertrophy',3,12],['Hip Thrust','Tonnage',3,8],['Standing Calf Raise','Hypertrophy',4,12]],
 1:[['Lever Chest Press','Tonnage',4,8],['Machine Incline Press','Hypertrophy',3,10],['Cable Lateral Raise','Hypertrophy',5,15],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Triceps Pushdown','Hypertrophy',4,12],['Machine Preacher Curl','Hypertrophy',4,10]],
 2:[['Lever Row','Tonnage',5,8],['Neutral-Grip Pulldown','Hypertrophy',5,10],['Chest-Supported Row','Hypertrophy',4,10],['Reverse Pec Deck','Hypertrophy',5,15],['Safety-Bar Good Morning','Technique',3,6],['Hammer Curl','Hypertrophy',4,10]],
 3:[['Lever Shoulder Press','Tonnage',4,8],['Machine Lateral Raise','Hypertrophy',5,15],['Rear-Delt Row','Hypertrophy',4,12],['Face Pull','Supplemental',3,15],['Lever Row','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',4,10],['Triceps Pushdown','Hypertrophy',4,12]],
 4:[['Machine Preacher Curl','Hypertrophy',5,10],['Triceps Pushdown','Hypertrophy',5,12],['Machine Lateral Raise','Hypertrophy',5,15],['Reverse Pec Deck','Hypertrophy',3,15],['Lever Chest Press','Hypertrophy',3,12],['Lever Row','Hypertrophy',4,12],['Leg-Press Calf Raise','Hypertrophy',3,15]]};
+function activeUnitDays(){return week===8?UNIT_DAYS.map((d,i)=>i<2?LEGACY_UNIT_DAYS[i]:d):week<8?LEGACY_UNIT_DAYS:UNIT_DAYS;}
 const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8,9,10,11],name:'Be a Fuckin Unit — Strength',desc:'No Week 8 deload. Two leg days, back work every session, and heavier barbell work. Missed reps hold the load; repeated misses trigger a small reset. Skipped lifts carry forward.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
 
 const TECHNIQUE_LIBRARY={
@@ -188,6 +205,8 @@ state.progression=state.progression||[];
 state.entries=state.entries||{};
 state.techChoices=state.techChoices||{};
 state.accessories=state.accessories||{};
+// v17: Never reindex or delete historical workout data. Earlier v16 migrations
+// remain untouched; new installations preserve all existing localStorage entries.
 state.bodyweights=state.bodyweights||{};state.completedWorkouts=state.completedWorkouts||{};state.expandedCompleted=state.expandedCompleted||{};state.accessoryLastWeights=state.accessoryLastWeights||{};state.backoffChains=state.backoffChains||{};
 let week=Number(state.currentWeek)||1, techPicker=null, accessoryPicker=null;
 
@@ -255,24 +274,24 @@ function getTechPrescription(lift){
 function dayAccessories(di){
  const k=`${week}-${di}`, saved=state.accessories?.[k];
  // v12: tolerate stale/malformed accessory data from earlier app versions.
+ if(week===8 && di===2 && Array.isArray(saved) && !state.v17Week8BackInitialized){
+   state.v17ArchivedWeek8Day3=JSON.parse(JSON.stringify(saved));
+   state.v17Week8BackInitialized=true;
+   localStorage.setItem(KEY,JSON.stringify(state));
+   // Historical deadlift-day logs remain in state.entries and in the archived accessories.
+ }
+ if(week===8 && di===2 && state.v17Week8BackInitialized && !state.v17Week8BackEdited) {
+   return (UNIT_ACC[2]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
+ }
  if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
  if(week>=5){
-   let src=(UNIT_ACC[di]||[]).map(x=>[...x]);
-   if(week>=8){
-     if(di===0)src.push(['Chest-Supported Row','Hypertrophy',3,10]);
-     if(di===2){
-       const squatPattern=(week%2===0)?'Safety-Bar Squat':'Zercher Squat';
-       src=[
-        [squatPattern,'Tonnage',3,6],['Seated Hamstring Curl','Hypertrophy',4,10],['Reverse Hyper','Supplemental',3,12],['Belt Squat March','Supplemental',3,20],
-        ['Lever Row','Tonnage',4,8],['Neutral-Grip Pulldown','Hypertrophy',4,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',4,15],['Hammer Curl','Hypertrophy',4,10]
-       ];
-     }
-   }
+   let src=((week<8 || (week===8 && di<2))?LEGACY_UNIT_ACC[di]:UNIT_ACC[di]||[]).map(x=>[...x]);
+   if(week>=8 && di===4)src[0][0]=(week%2===0)?'Safety-Bar Squat':'Zercher Squat';
    return src.map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
  }
  return (DEFAULT_ACC[di]||[]).map(name=>({name,category:EXCAT[name]||'General',sets:'3',reps:(name==='Face Pull'||name==='Lateral Raise')?'15':'8',loggedSets:[]}));
 }
-function setDayAccessories(di,list){state.accessories[`${week}-${di}`]=list;save()}
+function setDayAccessories(di,list){if(week===8&&di===2)state.v17Week8BackEdited=true;state.accessories[`${week}-${di}`]=list;save()}
 function addAccessory(di){const list=[...dayAccessories(di),{name:'',category:'General',sets:'3',reps:'8',loggedSets:[]}];setDayAccessories(di,list)}
 function removeAccessory(di,i){const item=dayAccessories(di)[i];if(confirm(`Delete ${item?.name||'this accessory'} from this workout?`))setDayAccessories(di,dayAccessories(di).filter((_,x)=>x!==i))}
 function updateAccessory(di,i,k,v){const list=[...dayAccessories(di)];list[i]={...list[i],[k]:v};setDayAccessories(di,list)}
@@ -282,7 +301,7 @@ function updateAccessorySet(di,i,j,k,v){
  // Keep the programmed rep target unless the user explicitly edits/deletes it.
  if(existing.reps===undefined)existing.reps=String(item.reps??'');
  rows[j]={...existing,[k]:v};item.loggedSets=rows;list[i]=item;
- state.accessories[`${week}-${di}`]=list;state.currentWeek=week;
+ if(week===8&&di===2)state.v17Week8BackEdited=true;state.accessories[`${week}-${di}`]=list;state.currentWeek=week;
  if(k==='weight'&&item.name&&v!==''){state.accessoryLastWeights[item.name]=v;}
  localStorage.setItem(KEY,JSON.stringify(state));
 }
@@ -368,7 +387,7 @@ function render(){
  document.getElementById('weeks').innerHTML=Array.from({length:16},(_,i)=>i+1).map(w=>`<button data-week="${w}" class="pill ${w===week?'active':''}" onclick="setWeek(${w})">${w}</button>`).join('');
  requestAnimationFrame(()=>{const active=document.querySelector('.pill.active'),strip=document.getElementById('weeks');if(active&&strip){strip.scrollLeft=active.offsetLeft-(strip.clientWidth-active.clientWidth)/2}});
  document.getElementById('summary').innerHTML=LIFTS.map(l=>{const vals=Object.values(state.entries).filter(e=>e.lift===l&&e.e1rm).map(e=>e.e1rm);const best=vals.length?Math.max(...vals):state.maxes[KEYS[l]];return `<div class="card"><div class="label">${l}</div><div class="big">${Math.round(best)} lb</div><div class="small">Best logged e1RM</div></div>`}).join('');
- const activeDays=week>=5?UNIT_DAYS:DAYS;document.getElementById('workouts').innerHTML=activeDays.map((d,i)=>{try{return workoutHtml(d,i,p)}catch(err){console.error('Workout render failed',week,i,err);return `<section id="workout-${i}" class="panel"><h2>${d?.name||`Day ${i+1}`}</h2><div class="small">This workout had incompatible saved data. Tap Repair to restore this day's programmed exercises without affecting your other training logs.</div><button class="btn secondary" style="width:100%;margin-top:12px" onclick="repairWorkout(${i})">Repair Workout</button></section>`}}).join('');const unit=week>=5;document.getElementById('unitBadge').classList.toggle('show',unit);document.getElementById('headerEyebrow').textContent=unit?'STRONG AS FUDGE · UNIT BLOCK':'16-WEEK AUTOREGULATED STRENGTH SYSTEM';document.getElementById('headerSub').textContent=unit?'Be focused. Sling weight. Get strong. Get big. Keep the bulk on a leash.':'Heavy primary days. Programmed technique work with weak-point overrides.';renderBodyweight();
+ const activeDays=week>=5?activeUnitDays():DAYS;document.getElementById('workouts').innerHTML=activeDays.map((d,i)=>{try{return workoutHtml(d,i,p)}catch(err){console.error('Workout render failed',week,i,err);return `<section id="workout-${i}" class="panel"><h2>${d?.name||`Day ${i+1}`}</h2><div class="small">This workout had incompatible saved data. Tap Repair to restore this day's programmed exercises without affecting your other training logs.</div><button class="btn secondary" style="width:100%;margin-top:12px" onclick="repairWorkout(${i})">Repair Workout</button></section>`}}).join('');const unit=week>=5;document.getElementById('unitBadge').classList.toggle('show',unit);document.getElementById('headerEyebrow').textContent=unit?'STRONG AS FUDGE · UNIT BLOCK':'16-WEEK AUTOREGULATED STRENGTH SYSTEM';document.getElementById('headerSub').textContent=unit?'Be focused. Sling weight. Get strong. Get big. Keep the bulk on a leash.':'Heavy primary days. Programmed technique work with weak-point overrides.';renderBodyweight();
  const recent=Object.values(state.entries).sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,10);
  document.getElementById('recent').innerHTML=recent.length?recent.map(e=>`<div class="log"><strong>W${e.week} ${e.lift}</strong><span class="small">${e.weight} × ${e.reps}${e.sets?` × ${e.sets}`:''} @ ${e.rpe}${e.backoffChains?' · ⛓ backoffs':''}</span><span class="e1rm">${e.e1rm?`${Math.round(e.e1rm)} e1RM`:(e.kind||'Logged')}</span></div>`).join(''):'<div class="small">No sets logged yet.</div>';
 }
@@ -397,7 +416,7 @@ function workoutSummary(day,di){
  return `${items.length} auxiliaries · ${loggedSets} auxiliary sets logged`;
 }
 function toggleCompleted(di){const k=`${week}-${di}`;state.expandedCompleted[k]=!state.expandedCompleted[k];localStorage.setItem(KEY,JSON.stringify(state));const y=window.scrollY;render();requestAnimationFrame(()=>window.scrollTo({top:y,left:0,behavior:'instant'}))}
-function scrollToFirstIncomplete(){const activeDays=week>=5?UNIT_DAYS:DAYS;const di=activeDays.findIndex((_,i)=>!state.completedWorkouts[`${week}-${i}`]);const el=document.getElementById(`workout-${di<0?0:di}`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})}
+function scrollToFirstIncomplete(){const activeDays=week>=5?activeUnitDays():DAYS;const di=activeDays.findIndex((_,i)=>!state.completedWorkouts[`${week}-${i}`]);const el=document.getElementById(`workout-${di<0?0:di}`);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});else window.scrollTo({top:0,behavior:'smooth'})}
 function workoutHtml(day,di,p){
  const done=state.completedWorkouts[`${week}-${di}`], expanded=state.expandedCompleted[`${week}-${di}`];
  if(done&&!expanded)return `<section id="workout-${di}" class="panel completedCard" onclick="toggleCompleted(${di})"><div class="row"><div><div class="doneMark">✓ ${day.name} — COMPLETE</div><div class="small" style="margin-top:4px">${workoutSummary(day,di)}</div></div><div class="expandHint">View Workout ▾</div></div></section>`;
