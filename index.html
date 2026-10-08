@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v18 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v19 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -273,31 +273,25 @@ function getTechPrescription(lift){
 
 function dayAccessories(di){
  const k=`${week}-${di}`; let saved=state.accessories?.[k];
- // v18: Rename only unlogged Back Day defaults. Never rewrite a logged movement
- // or its history, since different machines have different load scales.
- if(week>=8 && di===2 && Array.isArray(saved) && !state.v18NamedBackDays?.[k]){
-   const updated=saved.map(a=>{
-     if(!a || typeof a!=='object')return a;
-     const hasLogs=Array.isArray(a.loggedSets)&&a.loggedSets.some(s=>s&&(s.weight!==undefined&&s.weight!==''||s.reps!==undefined&&s.reps!==''));
-     if(hasLogs)return a;
-     if(a.name==='Lever Row')return {...a,name:'Hammer Strength Iso-Lateral Row',category:'Horizontal Pull'};
-     if(a.name==='Neutral-Grip Pulldown')return {...a,name:'Hammer Strength High Row / Pulldown',category:'Vertical Pull'};
-     return a;
-   });
-   state.accessories[k]=updated; saved=updated;
-   state.v18NamedBackDays={...(state.v18NamedBackDays||{}),[k]:true};
+ // v19: migrate unlogged legacy accessory plans on Week 8 Days 3–5.
+ // Keep any actual logged sets, and archive the previous configuration.
+ if(week===8 && di>=2 && di<=4 && !state.v19MigratedDays?.[k]){
+   const target=(UNIT_ACC[di]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
+   if(di===4 && target[0])target[0].name='Safety-Bar Squat';
+   const hasLogs=Array.isArray(saved)&&saved.some(a=>Array.isArray(a?.loggedSets)&&a.loggedSets.some(r=>r&&(r.weight!==undefined&&r.weight!==''||r.reps!==undefined&&r.reps!=='')));
+   if(Array.isArray(saved)){
+     state.v19ArchivedDays={...(state.v19ArchivedDays||{}),[k]:JSON.parse(JSON.stringify(saved))};
+   }
+   if(!hasLogs){
+     state.accessories[k]=target; saved=target;
+   } else if(di===2 && Array.isArray(saved)){
+     // Retain logged exercises and their identities; add only missing new exercises.
+     const existing=new Set(saved.map(a=>a?.name));
+     const additions=target.filter(a=>!existing.has(a.name));
+     state.accessories[k]=[...saved,...additions];saved=state.accessories[k];
+   }
+   state.v19MigratedDays={...(state.v19MigratedDays||{}),[k]:true};
    localStorage.setItem(KEY,JSON.stringify(state));
- }
-
- // v12: tolerate stale/malformed accessory data from earlier app versions.
- if(week===8 && di===2 && Array.isArray(saved) && !state.v17Week8BackInitialized){
-   state.v17ArchivedWeek8Day3=JSON.parse(JSON.stringify(saved));
-   state.v17Week8BackInitialized=true;
-   localStorage.setItem(KEY,JSON.stringify(state));
-   // Historical deadlift-day logs remain in state.entries and in the archived accessories.
- }
- if(week===8 && di===2 && state.v17Week8BackInitialized && !state.v17Week8BackEdited) {
-   return (UNIT_ACC[2]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
  }
  if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
  if(week>=5){

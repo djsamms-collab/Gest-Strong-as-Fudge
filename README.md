@@ -1,3 +1,1 @@
-Get Strong As Fudge v18
-
-Renames Week 8+ dedicated Back Day movements to Hammer Strength Iso-Lateral Row and Hammer Strength High Row / Pulldown. Existing logged exercise entries and loads remain unchanged; only unlogged saved default cards are renamed. Week 8 days 1–2 and all strength progressions remain unchanged. Export a backup before updating. Deploy to the same origin to retain local browser data.
+v19: Fix Week 8 Days 3-5 showing old accessory plans. Migrate unlogged plans to the new split; archive prior configurations and preserve logged sets and weights. Week 8 Days 1-2 unchanged. Export training data before deploying. Deploy at the same URL/origin as before.
