@@ -57,7 +57,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 <main>
 <div class="grid" id="summary"></div><section class="panel"><div class="row"><div><h2>Bodyweight Guardrail</h2><div class="small">More muscle and strength — not a runaway bulk.</div></div><div id="bwTrend" class="purpose">No trend yet</div></div><div class="bwrow" style="margin-top:12px"><div><div class="label">This week’s bodyweight</div><input id="bodyweightInput" type="number" inputmode="decimal" step="0.1" placeholder="lb"></div><button class="btn" onclick="saveBodyweight()">Save</button></div></section>
 <section class="panel"><div class="row"><div><h2 id="weekTitle"></h2><div class="small" id="phaseDesc"></div></div><button class="btn secondary" onclick="openMaxes()">Update Maxes</button></div><div class="weeknav"><button id="prevWeek" class="btn secondary" onclick="changeWeek(-1)">← Previous</button><select id="weekJump" class="weekjump" aria-label="Jump to week" onchange="setWeek(Number(this.value))"></select><button id="nextWeek" class="btn secondary" onclick="changeWeek(1)">Next →</button></div><div class="weeks" id="weeks"></div><div class="small" style="margin-top:9px">You can move backward or forward at any time. Logged workouts stay attached to their original week.</div></section>
-<div id="workouts"></div>
+<div class="small" style="margin:12px 4px;color:var(--green)">PROGRAM W8 TRANSITION · v20 · Week 8 Days 3–5 updated</div><div id="workouts"></div>
 <section class="panel"><h2>Recent Main-Lift Entries</h2><div id="recent"></div></section>
 <section class="panel">
   <h2>Export Training Data</h2>
@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v19 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v20 · Program W8 Transition · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -273,26 +273,23 @@ function getTechPrescription(lift){
 
 function dayAccessories(di){
  const k=`${week}-${di}`; let saved=state.accessories?.[k];
- // v19: migrate unlogged legacy accessory plans on Week 8 Days 3–5.
- // Keep any actual logged sets, and archive the previous configuration.
- if(week===8 && di>=2 && di<=4 && !state.v19MigratedDays?.[k]){
-   const target=(UNIT_ACC[di]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
-   if(di===4 && target[0])target[0].name='Safety-Bar Squat';
-   const hasLogs=Array.isArray(saved)&&saved.some(a=>Array.isArray(a?.loggedSets)&&a.loggedSets.some(r=>r&&(r.weight!==undefined&&r.weight!==''||r.reps!==undefined&&r.reps!=='')));
-   if(Array.isArray(saved)){
-     state.v19ArchivedDays={...(state.v19ArchivedDays||{}),[k]:JSON.parse(JSON.stringify(saved))};
-   }
-   if(!hasLogs){
-     state.accessories[k]=target; saved=target;
-   } else if(di===2 && Array.isArray(saved)){
-     // Retain logged exercises and their identities; add only missing new exercises.
-     const existing=new Set(saved.map(a=>a?.name));
-     const additions=target.filter(a=>!existing.has(a.name));
-     state.accessories[k]=[...saved,...additions];saved=state.accessories[k];
-   }
-   state.v19MigratedDays={...(state.v19MigratedDays||{}),[k]:true};
-   localStorage.setItem(KEY,JSON.stringify(state));
- }
+  // v20: one-time transition to the dedicated Back / Shoulders / Legs split.
+  // Archive previous configuration before replacing; never alter main-lift entries.
+  if(week===8 && di>=2 && di<=4 && !state.v20MigratedDays?.[k]){
+    const target=(UNIT_ACC[di]||[]).map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
+    if(Array.isArray(saved)){
+      state.v20ArchivedDays={...(state.v20ArchivedDays||{}),[k]:JSON.parse(JSON.stringify(saved))};
+      // Retain matching exercise logs in the new plan; nonmatching historical
+      // exercises remain archived and are not misleadingly relabeled.
+      target.forEach(item=>{
+        const prior=saved.find(a=>a?.name===item.name && Array.isArray(a.loggedSets) && a.loggedSets.length);
+        if(prior)item.loggedSets=JSON.parse(JSON.stringify(prior.loggedSets));
+      });
+    }
+    state.accessories[k]=target;saved=target;
+    state.v20MigratedDays={...(state.v20MigratedDays||{}),[k]:true};
+    localStorage.setItem(KEY,JSON.stringify(state));
+  }
  if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
  if(week>=5){
    let src=((week<8 || (week===8 && di<2))?LEGACY_UNIT_ACC[di]:UNIT_ACC[di]||[]).map(x=>[...x]);
@@ -386,7 +383,14 @@ function accessoryHtml(a,di,i){
  <div class="fields" style="grid-template-columns:1fr 1fr"><div><div class="label">Planned sets</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.sets||3}" onchange="updateAccessory(${di},${i},'sets',this.value)"></div><div><div class="label">Rep target</div><input type="number" inputmode="numeric" pattern="[0-9]*" value="${a.reps||8}" onchange="updateAccessory(${di},${i},'reps',this.value)"></div></div>
  <div class="label">Log each set</div>${rows.map((r,j)=>`<div class="setrow"><strong class="small">Set ${j+1}</strong><div><div class="label">Weight</div><input id="acc-${di}-${i}-${j}-weight" type="number" inputmode="decimal" enterkeyhint="next" value="${r.weight??''}" onblur="updateAccessorySet(${di},${i},${j},'weight',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'weight')"></div><div><div class="label">Reps</div><input id="acc-${di}-${i}-${j}-reps" type="number" inputmode="numeric" pattern="[0-9]*" enterkeyhint="next" value="${r.reps??''}" onblur="updateAccessorySet(${di},${i},${j},'reps',this.value)" onkeydown="accessoryKey(event,${di},${i},${j},'reps')"></div></div>`).join('')}</div>`;
 }
-function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><div><h3>Supplemental / Auxiliary Work</h3><div class="small">Do the programmed primary movement first, then use available machines or specialty bars for technique, tonnage, or hypertrophy. This work does not change the main-lift progression.</div></div><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}`}
+function archivedWeek8Html(di){
+  const items=week===8?state.v20ArchivedDays?.[`${week}-${di}`]:null;
+  if(!Array.isArray(items))return '';
+  const logged=items.filter(a=>Array.isArray(a?.loggedSets)&&a.loggedSets.some(r=>r&&r.weight!==undefined&&r.weight!==''));
+  if(!logged.length)return '';
+  return `<details class="accessorybox"><summary>Archived previous Day ${di+1} accessory logs (${logged.length} exercises)</summary>${logged.map(a=>`<div class="small" style="margin-top:8px"><strong>${a.name}</strong>: ${a.loggedSets.map(r=>`${r.weight||'—'} lb × ${r.reps||'—'}`).join(' · ')}</div>`).join('')}</details>`;
+}
+function accessoriesSection(di){return `<div class="row" style="margin-top:20px"><div><h3>Supplemental / Auxiliary Work</h3><div class="small">Do the programmed primary movement first, then use available machines or specialty bars for technique, tonnage, or hypertrophy. This work does not change the main-lift progression.</div></div><button class="btn secondary smallbtn" onclick="addAccessory(${di})">+ Add</button></div>${dayAccessories(di).map((a,i)=>accessoryHtml(a,di,i)).join('')}${archivedWeek8Html(di)}`}
 
 function render(){
  const p=phaseFor(week);

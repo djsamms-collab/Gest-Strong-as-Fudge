@@ -1,0 +1,1 @@
+Replace the repository root index.html with this file. Keep your existing manifest.webmanifest, icons, and service-worker.js. Export workout data first. Do not reset app data. v20 migrates Week 8 Days 3-5 accessory plans and archives older logged accessory data.
