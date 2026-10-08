@@ -1,3 +1,3 @@
-Get Strong As Fudge v17
+Get Strong As Fudge v18
 
-Week 8 days 1–2 retain the v15 plan. Week 8 days 3–5 use the new split. Weeks 9–16 use the full v16 split. Existing local training data is not cleared or reindexed. Week 8 day 3 legacy accessory data is archived under v17ArchivedWeek8Day3 if present; primary lift entries are retained. Export your data before updating.
+Renames Week 8+ dedicated Back Day movements to Hammer Strength Iso-Lateral Row and Hammer Strength High Row / Pulldown. Existing logged exercise entries and loads remain unchanged; only unlogged saved default cards are renamed. Week 8 days 1–2 and all strength progressions remain unchanged. Export a backup before updating. Deploy to the same origin to retain local browser data.

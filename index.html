@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v17 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v18 · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -98,7 +98,7 @@ const UNIT_DAYS=[
 const UNIT_ACC={
  0:[['Pendulum Squat','Tonnage',3,8],['Safety-Bar Bulgarian Split Squat','Hypertrophy',2,8],['Seated Hamstring Curl','Hypertrophy',3,12],['Chest-Supported Row','Hypertrophy',3,10],['Standing Calf Raise','Hypertrophy',3,12]],
  1:[['Lever Chest Press','Tonnage',3,8],['Machine Incline Press','Hypertrophy',2,10],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Cable Lateral Raise','Hypertrophy',3,15],['Triceps Pushdown','Hypertrophy',3,12]],
- 2:[['Lever Row','Tonnage',4,8],['Neutral-Grip Pulldown','Hypertrophy',3,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',3,15],['Hammer Curl','Hypertrophy',3,10],['Machine Preacher Curl','Hypertrophy',2,10]],
+ 2:[['Hammer Strength Iso-Lateral Row','Tonnage',4,8],['Hammer Strength High Row / Pulldown','Hypertrophy',3,10],['Chest-Supported Row','Hypertrophy',3,10],['Reverse Pec Deck','Hypertrophy',3,15],['Hammer Curl','Hypertrophy',3,10],['Machine Preacher Curl','Hypertrophy',2,10]],
  3:[['Lever Shoulder Press','Tonnage',2,8],['Machine Lateral Raise','Hypertrophy',4,15],['Rear-Delt Row','Hypertrophy',3,12],['Lever Row','Hypertrophy',3,12],['Triceps Pushdown','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',2,10]],
  4:[['Safety-Bar Squat','Tonnage',3,6],['Seated Hamstring Curl','Hypertrophy',4,10],['Reverse Hyper','Supplemental',3,12],['Belt Squat March','Supplemental',3,20],['45° Back Extension','Supplemental',2,12]]
 };
@@ -177,10 +177,10 @@ const DEFAULT_TECH={
 
 const ACCESSORY_GROUPS={
  'Squat / Quad':['Belt Squat','Pendulum Squat','Lever Squat','Hack Squat','V-Squat','Leg Press','Leg Extension','Paused Squat','Tempo Squat','Front Squat','Safety-Bar Squat','Zercher Squat','Safety-Bar Good Morning','Safety-Bar Bulgarian Split Squat','High-Bar Squat','Bulgarian Split Squat','Walking Lunge','Step-Up'],
- 'Vertical Pull':['Weighted Pull-Up','Pull-Up','Chin-Up','Lat Pulldown','Neutral-Grip Pulldown'],
+ 'Vertical Pull':['Hammer Strength High Row / Pulldown','Weighted Pull-Up','Pull-Up','Chin-Up','Lat Pulldown','Neutral-Grip Pulldown'],
  'Core':['Ab Wheel','Hanging Leg Raise','Cable Crunch','Dead Bug','Plank','Pallof Press'],
  'Bench / Triceps':['Close-Grip Bench','Spoto Press','Floor Press','JM Press','Weighted Dip','Triceps Pushdown'],
- 'Horizontal Pull':['Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row','Lever Row','Plate-Loaded Row'],
+ 'Horizontal Pull':['Hammer Strength Iso-Lateral Row','Barbell Row','Chest-Supported Row','Dumbbell Row','Seal Row','Cable Row','Machine Row','Lever Row','Plate-Loaded Row'],
  'Rear Delt / Scapular':['Face Pull','Reverse Pec Deck','Band Pull-Apart','Rear-Delt Row'],
  'Upper Chest / Press':['Z-Press','Incline Bench','Incline Dumbbell Press','Low-Incline Bench','Machine Chest Press','Lever Chest Press','Plate-Loaded Chest Press','Converging Chest Press','Machine Incline Press','Lever Incline Press','Machine Shoulder Press','Lever Shoulder Press'],
  'Lateral Delt':['Lateral Raise','Cable Lateral Raise','Machine Lateral Raise','Lean-Away Lateral Raise'],
@@ -272,7 +272,23 @@ function getTechPrescription(lift){
 }
 
 function dayAccessories(di){
- const k=`${week}-${di}`, saved=state.accessories?.[k];
+ const k=`${week}-${di}`; let saved=state.accessories?.[k];
+ // v18: Rename only unlogged Back Day defaults. Never rewrite a logged movement
+ // or its history, since different machines have different load scales.
+ if(week>=8 && di===2 && Array.isArray(saved) && !state.v18NamedBackDays?.[k]){
+   const updated=saved.map(a=>{
+     if(!a || typeof a!=='object')return a;
+     const hasLogs=Array.isArray(a.loggedSets)&&a.loggedSets.some(s=>s&&(s.weight!==undefined&&s.weight!==''||s.reps!==undefined&&s.reps!==''));
+     if(hasLogs)return a;
+     if(a.name==='Lever Row')return {...a,name:'Hammer Strength Iso-Lateral Row',category:'Horizontal Pull'};
+     if(a.name==='Neutral-Grip Pulldown')return {...a,name:'Hammer Strength High Row / Pulldown',category:'Vertical Pull'};
+     return a;
+   });
+   state.accessories[k]=updated; saved=updated;
+   state.v18NamedBackDays={...(state.v18NamedBackDays||{}),[k]:true};
+   localStorage.setItem(KEY,JSON.stringify(state));
+ }
+
  // v12: tolerate stale/malformed accessory data from earlier app versions.
  if(week===8 && di===2 && Array.isArray(saved) && !state.v17Week8BackInitialized){
    state.v17ArchivedWeek8Day3=JSON.parse(JSON.stringify(saved));
