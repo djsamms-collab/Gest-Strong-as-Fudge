@@ -57,7 +57,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
 <main>
 <div class="grid" id="summary"></div><section class="panel"><div class="row"><div><h2>Bodyweight Guardrail</h2><div class="small">More muscle and strength — not a runaway bulk.</div></div><div id="bwTrend" class="purpose">No trend yet</div></div><div class="bwrow" style="margin-top:12px"><div><div class="label">This week’s bodyweight</div><input id="bodyweightInput" type="number" inputmode="decimal" step="0.1" placeholder="lb"></div><button class="btn" onclick="saveBodyweight()">Save</button></div></section>
 <section class="panel"><div class="row"><div><h2 id="weekTitle"></h2><div class="small" id="phaseDesc"></div></div><button class="btn secondary" onclick="openMaxes()">Update Maxes</button></div><div class="weeknav"><button id="prevWeek" class="btn secondary" onclick="changeWeek(-1)">← Previous</button><select id="weekJump" class="weekjump" aria-label="Jump to week" onchange="setWeek(Number(this.value))"></select><button id="nextWeek" class="btn secondary" onclick="changeWeek(1)">Next →</button></div><div class="weeks" id="weeks"></div><div class="small" style="margin-top:9px">You can move backward or forward at any time. Logged workouts stay attached to their original week.</div></section>
-<div class="small" style="margin:12px 4px;color:var(--green)">PROGRAM W8 TRANSITION · v20 · Week 8 Days 3–5 updated</div><div id="workouts"></div>
+<div class="small" style="margin:12px 4px;color:var(--green)">PROGRAM v21 · WEEK 9+ ORDER: LEGS / CHEST / BACK / LEGS 2 / SHOULDERS</div><div id="workouts"></div>
 <section class="panel"><h2>Recent Main-Lift Entries</h2><div id="recent"></div></section>
 <section class="panel">
   <h2>Export Training Data</h2>
@@ -66,7 +66,7 @@ input,select{width:100%;background:#0D1426;color:var(--text);border:1px solid va
   <div class="exportNote">On iPhone, the Share Sheet can send the workbook to Mail, Messages, Files, AirDrop, and other supported apps.</div>
 </section>
 <button class="btn danger" style="margin-top:14px;width:100%" onclick="resetData()">Reset App Data</button>
-<div class="footer">v20 · Program W8 Transition · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
+<div class="footer">v21 · Week 9+ reordered · All training data is stored locally on this device. Your current training week is remembered automatically.</div>
 </main>
 <div id="celebrate" class="celebrate"><div id="celebrateWord" class="celebrateWord"></div></div><div id="loginSplash" class="splash"><div id="loginSplashText" class="splashText"></div></div>
 
@@ -115,7 +115,15 @@ const LEGACY_UNIT_ACC={
 2:[['Lever Row','Tonnage',5,8],['Neutral-Grip Pulldown','Hypertrophy',5,10],['Chest-Supported Row','Hypertrophy',4,10],['Reverse Pec Deck','Hypertrophy',5,15],['Safety-Bar Good Morning','Technique',3,6],['Hammer Curl','Hypertrophy',4,10]],
 3:[['Lever Shoulder Press','Tonnage',4,8],['Machine Lateral Raise','Hypertrophy',5,15],['Rear-Delt Row','Hypertrophy',4,12],['Face Pull','Supplemental',3,15],['Lever Row','Hypertrophy',3,12],['Machine Preacher Curl','Hypertrophy',4,10],['Triceps Pushdown','Hypertrophy',4,12]],
 4:[['Machine Preacher Curl','Hypertrophy',5,10],['Triceps Pushdown','Hypertrophy',5,12],['Machine Lateral Raise','Hypertrophy',5,15],['Reverse Pec Deck','Hypertrophy',3,15],['Lever Chest Press','Hypertrophy',3,12],['Lever Row','Hypertrophy',4,12],['Leg-Press Calf Raise','Hypertrophy',3,15]]};
-function activeUnitDays(){return week===8?UNIT_DAYS.map((d,i)=>i<2?LEGACY_UNIT_DAYS[i]:d):week<8?LEGACY_UNIT_DAYS:UNIT_DAYS;}
+// From Week 9 onward, the second leg day precedes shoulders.
+// Week 8 is deliberately unchanged to protect completed workouts.
+const WEEK9_UNIT_ORDER=[0,1,2,4,3];
+function activeUnitDays(){
+ if(week<8)return LEGACY_UNIT_DAYS;
+ if(week===8)return UNIT_DAYS.map((d,i)=>i<2?LEGACY_UNIT_DAYS[i]:d);
+ return WEEK9_UNIT_ORDER.map((oldIndex,newIndex)=>({...UNIT_DAYS[oldIndex],name:UNIT_DAYS[oldIndex].name.replace(/^Day [1-5]/,`Day ${newIndex+1}`)}));
+}
+function unitAccessoryIndex(di){return week>=9?WEEK9_UNIT_ORDER[di]:di;}
 const PHASES=[{weeks:[1,2,3],name:'Base',desc:'Build volume and skill. Primary days use top 5s; technique work stays crisp at RPE 6–7.',primary:{reps:5,sets:5,backReps:5,pct:.85}},{weeks:[4],name:'Deload',desc:'Reduce fatigue. Move everything fast. Then the Unit block begins.',primary:{reps:5,sets:3,backReps:5,pct:.75,deload:true}},{weeks:[5,6,7],name:'Be a Fuckin Unit — Build',desc:'Dedicated body-part days. Barbell strength first, then machine tonnage and hypertrophy.',primary:{reps:5,sets:3,backReps:5,pct:.78}},{weeks:[8,9,10,11],name:'Be a Fuckin Unit — Strength',desc:'No Week 8 deload. Two leg days, back work every session, and heavier barbell work. Missed reps hold the load; repeated misses trigger a small reset. Skipped lifts carry forward.',primary:{reps:3,sets:3,backReps:4,pct:.80}},{weeks:[12],name:'Unit Deload',desc:'Pull fatigue down. Leave reps in reserve.',primary:{reps:4,sets:2,backReps:4,pct:.70,deload:true}},{weeks:[13,14,15],name:'Be a Fuckin Unit — Intensify',desc:'Heavy, crisp primary work plus targeted tonnage.',primary:{reps:2,sets:3,backReps:3,pct:.80}},{weeks:[16],name:'Unit Test / Victory Lap',desc:'Test the big lifts if recovery is good, then earn a restrained pump.',primary:{reps:1,sets:0,backReps:0,pct:0,test:true}}];
 
 const TECHNIQUE_LIBRARY={
@@ -292,8 +300,8 @@ function dayAccessories(di){
   }
  if(Array.isArray(saved))return saved.filter(a=>a&&typeof a==='object').map(a=>({...a,loggedSets:Array.isArray(a.loggedSets)?a.loggedSets:[]}));
  if(week>=5){
-   let src=((week<8 || (week===8 && di<2))?LEGACY_UNIT_ACC[di]:UNIT_ACC[di]||[]).map(x=>[...x]);
-   if(week>=8 && di===4)src[0][0]=(week%2===0)?'Safety-Bar Squat':'Zercher Squat';
+   let src=((week<8 || (week===8 && di<2))?LEGACY_UNIT_ACC[di]:UNIT_ACC[unitAccessoryIndex(di)]||[]).map(x=>[...x]);
+   if(week>=8 && unitAccessoryIndex(di)===4)src[0][0]=(week%2===0)?'Safety-Bar Squat':'Zercher Squat';
    return src.map(([name,role,sets,reps])=>({name,category:EXCAT[name]||'General',role,sets:String(sets),reps:String(reps),loggedSets:[]}));
  }
  return (DEFAULT_ACC[di]||[]).map(name=>({name,category:EXCAT[name]||'General',sets:'3',reps:(name==='Face Pull'||name==='Lateral Raise')?'15':'8',loggedSets:[]}));
@@ -441,7 +449,7 @@ function workoutHtml(day,di,p){
  else body=`<h2>${day.name}</h2>${week===16?'<div class="small">No secondary work during test week.</div>':techniqueHtml('OHP',di)+techniqueHtml('Deadlift',di)}${accessoriesSection(di)}${recoveryHtml(di)}`;
  return `<section id="workout-${di}" class="panel">${body}<button class="btn finishBtn ${done?'secondary':''}" onclick="finishWorkout(${di})">${done?'✓ WORKOUT LOGGED · COLLAPSE':'FINISH WORKOUT'}</button></section>`;
 }
-function recoveryHtmlUnit(di){const rec=[['10–20 min easy walk or bike','Leg day: eat, hydrate, recover.'],['15–25 min Zone 2 optional','Keep it easy enough for tomorrow’s back work.'],['10–20 min easy walk','Skip hard intervals after heavy pulls.'],['15–25 min Zone 2 optional','Save the violence for the weights.'],['20–30 min Zone 2 or easy incline walk','Leave feeling better than you arrived.']][di]||['15–20 min easy','Recover.'];return `<div class="recovery"><div class="recoveryTitle">Finish the day</div><div><strong>Conditioning:</strong> ${rec[0]}</div><div style="margin-top:5px"><strong>Recovery:</strong> ${rec[1]}</div></div>`;}
+function recoveryHtmlUnit(di){const rec=[['10–20 min easy walk or bike','Leg day: eat, hydrate, recover.'],['15–25 min Zone 2 optional','Keep it easy enough for tomorrow’s back work.'],['10–20 min easy walk','Skip hard intervals after heavy pulls.'],['15–25 min Zone 2 optional','Save the violence for the weights.'],['20–30 min Zone 2 or easy incline walk','Leave feeling better than you arrived.']][unitAccessoryIndex(di)]||['15–20 min easy','Recover.'];return `<div class="recovery"><div class="recoveryTitle">Finish the day</div><div><strong>Conditioning:</strong> ${rec[0]}</div><div style="margin-top:5px"><strong>Recovery:</strong> ${rec[1]}</div></div>`;}
 function finishWorkout(di){const k=`${week}-${di}`;if(state.completedWorkouts[k]){state.expandedCompleted[k]=false;localStorage.setItem(KEY,JSON.stringify(state));render();requestAnimationFrame(()=>scrollToFirstIncomplete());return}state.completedWorkouts[k]=new Date().toISOString();state.expandedCompleted[k]=false;localStorage.setItem(KEY,JSON.stringify(state));celebrate('workout');setTimeout(()=>{render();requestAnimationFrame(()=>scrollToFirstIncomplete())},900)}
 function saveBodyweight(){const v=Number(document.getElementById('bodyweightInput').value);if(!v)return;state.bodyweights[week]=v;localStorage.setItem(KEY,JSON.stringify(state));renderBodyweight();celebrate('bodyweight')}
 function renderBodyweight(){const el=document.getElementById('bodyweightInput'),trend=document.getElementById('bwTrend');if(!el||!trend)return;el.value=state.bodyweights[week]||'';const cur=Number(state.bodyweights[week]||0),prev=Number(state.bodyweights[week-1]||0);if(!cur||!prev){trend.textContent='No trend yet';return}const d=cur-prev;trend.textContent=`${d>0?'+':''}${d.toFixed(1)} lb vs last week`;}

@@ -1,1 +1,1 @@
-Replace the repository root index.html with this file. Keep your existing manifest.webmanifest, icons, and service-worker.js. Export workout data first. Do not reset app data. v20 migrates Week 8 Days 3-5 accessory plans and archives older logged accessory data.
+Upload index.html to the root of your GitHub Pages repository, replacing the existing index.html. Week 8 is unchanged. Weeks 9-16 are Legs / Chest / Back / Legs 2 / Shoulders. Do not clear app data.
